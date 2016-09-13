@@ -309,9 +309,12 @@ class Chiru(Bot):
         # Print logging output.
 
         if not isinstance(message.channel, discord.PrivateChannel):
-            self.logger.info("Recieved message: {message.content} from {message.author.display_name}{bot}"
+            self.logger.info("Recieved message: {message.content}".format(message=message))
+            self.logger.info("  From: {message.author.display_name}{bot}"
                              .format(message=message, bot=" [BOT]" if message.author.bot else ""))
-            self.logger.info(" On channel: #{message.channel.name}".format(message=message))
+            if message.author.display_name!=message.author.name:
+                self.logger.info("  Username: {message.author.name}".format(message=message))
+            self.logger.info("  On channel: #{message.channel.name}".format(message=message))
 
         # Check for a valid server.
         if message.server is not None:
