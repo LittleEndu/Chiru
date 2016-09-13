@@ -19,6 +19,7 @@ import yaml
 
 import traceback
 
+from datetime import datetime
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandNotFound
 from discord.ext.commands.view import StringView
@@ -37,7 +38,7 @@ from override import Context
 # Define logging stuff.
 redirect_logging()
 
-StreamHandler(sys.stderr).push_application()
+#StreamHandler(sys.stderr).push_application()
 
 r = re.compile(r"_requirements:: (.*)?")
 
@@ -65,6 +66,7 @@ class Chiru(Bot):
         self.logger = logbook.Logger("Chiru")
         self.logger.level = logbook.INFO
 
+
         # We still have to do this
         logging.root.setLevel(logging.INFO)
 
@@ -83,6 +85,10 @@ class Chiru(Bot):
 
         with open(cfg) as f:
             self.config = yaml.load(f)
+
+        self.logger.handlers.append(logbook.FileHandler(self.config.get("loglocation")+str(datetime.now().date())+".log",level="DEBUG", bubble=True))
+        self.logger.handlers.append(logbook.StreamHandler(sys.stderr, level='INFO', bubble=True))
+        self.logger.info("Chiru Initializing\n\n\t\tChiru Initializing\n\n\t\tChiru Initializing\n\n")
 
         if self.config.get("use_uvloop", False):
             import uvloop
