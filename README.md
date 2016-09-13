@@ -16,7 +16,7 @@ Chiru has a slightly complex set up due to the database backend used.
 
 1. Install requirements.
 
-	`pip install -r --upgrade requirements.txt`
+	`pip install -r requirements.txt --upgrade`
 	
 	
 2. Copy config.example.yml to config.yml.
