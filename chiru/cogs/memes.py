@@ -63,6 +63,7 @@ class Memes:
         """
         Will list all meme images. Optional string to search for.
 
+        Memes listed all have a chance to appear when same string is used on meme command
         """
         loc = self.bot.config.get("memelocation", "")
         if searchfor!="":
@@ -157,15 +158,16 @@ class Memes:
             ext = ext.split(".")
             words.append(ext[0])
             ext = "." + ext[-1]
+            finalwords = words[:] #bugfix: will now remove more than one word. It didn't before for some reason
             for w1 in words:
                 for w2 in words:
                     if w1 == w2:
                         continue
                     if re.match(".*(" + re.escape(w1) + ").*", w2):
-                        words.remove(w1)
+                        finalwords.remove(w1)
                         break
             name = ""
-            for w in words:
+            for w in finalwords:
                 name += w + " "
             name = name.strip() + ext
             if i != name:
