@@ -318,7 +318,7 @@ class Chiru(Bot):
 
         # Check for a valid server.
         if message.server is not None:
-            self.logger.info(" On server: {} ({})".format(message.server.name, message.server.id))
+            self.logger.info("  On server: {} ({})".format(message.server.name, message.server.id))
         else:
             if self.config.get("self_bot"):
                 return

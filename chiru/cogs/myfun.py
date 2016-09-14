@@ -24,15 +24,13 @@ class MyFun(object):
 
     def __init__(self, bot: Chiru):
         self.bot = bot
-        
-    
+
     @commands.command(pass_context=True)
     async def marco(self, ctx: Context):
         """
         Says "polo"
         """
         await self.bot.say("polo")
-	
 
     @commands.command(pass_context=True)
     async def shrug(self, ctx: Context):
@@ -40,7 +38,8 @@ class MyFun(object):
         Makes a shrug
         """
         await self.bot.delete_message(ctx.message)
-        await self.bot.say("¯\_(ツ)_/¯")	
+        await self.bot.say("¯\_(ツ)_/¯")
+
     @commands.command(pass_context=True)
     async def lenny(self, ctx: Context):
         """
@@ -54,7 +53,7 @@ class MyFun(object):
         """
         Makes a "RIP chat" ascii tombstone
         """
-        fmt="""``` .'--._ `-:  //:  /'  './             _|_
+        fmt = """``` .'--._ `-:  //:  /'  './             _|_
 	 /.'`/ :;   /'      `-           `-|-`
 	-`    |     |                      |
 		  :.; : |                  .-'~^~`-.
@@ -65,7 +64,7 @@ class MyFun(object):
 	  .-..:..-;:|:/              |  C H A T  |	
 -."-///////:::.    `/."-._'."-"_///-| {0}-{0} |///."-
 " -."-.////"-."//.-".`-."_///-.".-///`=.........=`//-".```""".format(datetime.now().year)
-        if (ctx.server.id=="175856762677624832" or ctx.channel.id=="222793472912916481"):
+        if (ctx.server.id == "175856762677624832" or ctx.channel.id == "222793472912916481"):
             await self.bot.say("Chiru: ``No, you will get banned if you make another ASCII tombstone again.``")
         else:
             await self.bot.delete_message(ctx.message)
@@ -76,7 +75,10 @@ class MyFun(object):
         """
         Finds the avatar url of some member
         """
-        await self.bot.say("Chiru: ``Here you go. Avatar url for {member.name}#{member.discriminator}: <{member.avatar_url}>``".format(member=member))
-    
+        await self.bot.say(
+            "Chiru: ``Here you go. Avatar url for {member.name}#{member.discriminator}: <{member.avatar_url}>``".format(
+                member=member))
+
+
 def setup(bot: Chiru):
     bot.add_cog(MyFun(bot))

@@ -131,9 +131,9 @@ Mutual servers: {mut}```"""
         """
         Show information about the bot.
         """
-        await self.bot.say("I'm {} - yet another bot.\n"
+        await self.bot.say("I'm Chiru - yet another bot.\n"
                            "I was written by Fuyu, the best programmer in the world.\n"
-                           "Join my test server: https://discord.gg/Rh6jAXa".format(self.bot.user.name))
+                           "Join my test server: https://discord.gg/Rh6jAXa")
 
     @commands.command(pass_context=True, )
     async def upscale(self, ctx: Context, *, url: str):

@@ -137,7 +137,7 @@ class Owner:
             result = repr(e)
 
         if self.bot.is_self_bot:
-            fmt = "```xl\nInput: {}\nOutput: {}```".format(command, result)
+            fmt = "```xl\nInput: {}\nOutput: {}\nIs instance of string: {}```".format(command, result, isinstance(result, str))
             await asyncio.sleep(0.05)
             await self.bot.edit_message(ctx.message, fmt)
 
