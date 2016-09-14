@@ -49,28 +49,6 @@ class MyFun(object):
         await self.bot.say("( ͡° ͜ʖ ͡°)")
 
     @commands.command(pass_context=True)
-    async def rip(self, ctx: Context):
-        """
-        Makes a "RIP chat" ascii tombstone
-        """
-        fmt = """``` .'--._ `-:  //:  /'  './             _|_
-	 /.'`/ :;   /'      `-           `-|-`
-	-`    |     |                      |
-		  :.; : |                  .-'~^~`-.
-		  |:    |                .' _     _ `.
-		  |:.   |                | |_) | |_) |
-		  :. :  |                | | / | |   |
-		..|.. : ;                |           |
-	  .-..:..-;:|:/              |  C H A T  |	
--."-///////:::.    `/."-._'."-"_///-| {0}-{0} |///."-
-" -."-.////"-."//.-".`-."_///-.".-///`=.........=`//-".```""".format(datetime.now().year)
-        if (ctx.server.id == "175856762677624832" or ctx.channel.id == "222793472912916481"):
-            await self.bot.say("Chiru: ``No, you will get banned if you make another ASCII tombstone again.``")
-        else:
-            await self.bot.delete_message(ctx.message)
-            await self.bot.say(fmt)
-
-    @commands.command(pass_context=True)
     async def snagavatar(self, ctx: Context, member: discord.Member):
         """
         Finds the avatar url of some member
