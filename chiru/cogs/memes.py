@@ -20,6 +20,57 @@ class Memes:
 
     def __init__(self, bot: Chiru):
         self.bot = bot
+        self._members = []
+        self._message = ""
+
+    @commands.command(pass_context=True, invoke_without_command=True)
+    async def mememention(self, ctx: Context, *, member: discord.Member = None):
+        """
+        Set a mention for next meme
+        """
+        if member != None:
+            self._members += [member]
+            await self.bot.delete_message(ctx.message)
+            await asyncio.sleep(60)
+            if member in self._members:
+                self._members.remove(member)
+        else:
+            if self._members == []:
+                await self.bot.say("Chiru: ``There's nobody set to be mentioned``")
+            else:
+                fmt = ""
+                for m in self._members:
+                    fmt += str(m.name) + ", "
+                if len(self._members) == 1:
+                    await self.bot.say("Chiru: ``" + fmt[:-2] + " is set to be mentioned``")
+                else:
+                    await self.bot.say("Chiru: ``" + fmt[:-2] + " are set to be mentioned``")
+
+    @commands.command(pass_context=True)
+    async def clearmention(self, ctx: Context):
+        """
+        Clears the mention
+        """
+        self._members = []
+        await self.bot.say("Chiru: ``Metions cleared`` :thumbsup:")
+
+    @commands.command(pass_context=True)
+    async def mememessage(self, ctx: Context, *, message: str):
+        """
+        Set a message for next meme
+        """
+        self._message = message
+        await self.bot.delete_message(ctx.message)
+        await asyncio.sleep(60)
+        self._message = ""
+
+    @commands.command(pass_context=True)
+    async def clearmessage(self, ctx: Context):
+        """
+        Clears the message
+        """
+        self._message = []
+        await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
     @commands.command(pass_context=True)
     async def meme(self, ctx: Context, *, searchfor: str):
@@ -49,7 +100,13 @@ class Memes:
                 elif matches[m] == matches[bestmatch[0]]:
                     bestmatch += [m]
         if len(bestmatch) > 0:
-            await self.bot.send_file(ctx.channel, loc + bestmatch[randint(0, len(bestmatch) - 1)])
+            fmt = ""
+            for m in self._members:
+                fmt += str(m.mention) + " "
+            await self.bot.send_file(ctx.channel, loc + bestmatch[randint(0, len(bestmatch) - 1)],
+                                     content=fmt + " " + self._message)
+            self._members = []
+            self._message = ""
             await self.bot.delete_message(ctx.message)
 
         else:
@@ -66,7 +123,7 @@ class Memes:
         Memes listed all have a chance to appear when same string is used on meme command
         """
         loc = self.bot.config.get("memelocation", "")
-        if searchfor!="":
+        if searchfor != "":
             ##They serched for something so we'll use dictonary
             matches = {x: 0 for x in os.listdir(loc)}
             ss = searchfor
@@ -99,25 +156,20 @@ class Memes:
                         fmt = ""
                 await self.bot.say(fmt)
             else:
-                await self.bot.say("Chiru: ``Didn't find any memes for" + ss + "``")
+                await self.bot.say("Chiru: ``Didn't find any memes for " + ss + "``")
         else:
             ##They didn't search anything so we are good to list them all
             index = 0
             fmt = ""
             ss = searchfor
-            searchfor = searchfor.replace("'", "").lower().split()
             for i in os.listdir(loc):
-                if all(re.match(".*(" + re.escape(j) + ").*", i.lower()) for j in searchfor):
-                    fmt = fmt + "``" + str(index + 1) + ". " + i + "``\t\t"
-                    index += 1
-                    if index % 15 == 0:
-                        await self.bot.say(fmt)
-                        fmt = ""
-                        await asyncio.sleep(0.1)
-            if index > 0:
-                await self.bot.say(fmt)
-            else:
-                await self.bot.say("Chiru: ``Didn't find any memes for " + ss + "``")
+                fmt = fmt + "``" + str(index + 1) + ". " + i + "``\t\t"
+                index += 1
+                if index % 15 == 0:
+                    await self.bot.say(fmt)
+                    fmt = ""
+                    await asyncio.sleep(0.1)
+            await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
     async def checkmemes(self, ctx: Context):
@@ -158,7 +210,7 @@ class Memes:
             ext = ext.split(".")
             words.append(ext[0])
             ext = "." + ext[-1]
-            finalwords = words[:] #bugfix: will now remove more than one word. It didn't before for some reason
+            finalwords = words[:]  # bugfix: will now remove more than one word. It didn't before for some reason
             for w1 in words:
                 for w2 in words:
                     if w1 == w2:
@@ -176,6 +228,8 @@ class Memes:
         if fmt != "":
             await self.bot.say("Chiru: ``Here are the memes I renamed``\n"
                                "```" + fmt + "```")
+        else:
+            await self.bot.say("Chiru: ``All memes are already clean``")
 
 
 def setup(bot: Chiru):
