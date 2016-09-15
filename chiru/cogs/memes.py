@@ -20,7 +20,7 @@ class Memes:
 
     def __init__(self, bot: Chiru):
         self.bot = bot
-        self._members = []
+        self._members = set()
         self._message = ""
 
     @commands.command(pass_context=True, invoke_without_command=True)
@@ -29,13 +29,13 @@ class Memes:
         Set a mention for next meme
         """
         if member != None:
-            self._members += [member]
+            self._members.add(member)
             await self.bot.delete_message(ctx.message)
             await asyncio.sleep(60)
             if member in self._members:
                 self._members.remove(member)
         else:
-            if self._members == []:
+            if self._members == set():
                 await self.bot.say("Chiru: ``There's nobody set to be mentioned``")
             else:
                 fmt = ""
@@ -51,7 +51,7 @@ class Memes:
         """
         Clears the mention
         """
-        self._members = []
+        self._members = set()
         await self.bot.say("Chiru: ``Metions cleared`` :thumbsup:")
 
     @commands.command(pass_context=True)
@@ -69,7 +69,7 @@ class Memes:
         """
         Clears the message
         """
-        self._message = []
+        self._message = ""
         await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
     @commands.command(pass_context=True)
@@ -105,7 +105,7 @@ class Memes:
                 fmt += str(m.mention) + " "
             await self.bot.send_file(ctx.channel, loc + bestmatch[randint(0, len(bestmatch) - 1)],
                                      content=fmt + " " + self._message)
-            self._members = []
+            self._members = set()
             self._message = ""
             await self.bot.delete_message(ctx.message)
 
