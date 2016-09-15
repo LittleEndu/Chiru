@@ -33,20 +33,20 @@ class MyFun(object):
         await self.bot.say("polo")
 
     @commands.command(pass_context=True)
-    async def shrug(self, ctx: Context):
+    async def shrug(self, ctx: Context, *, message: str=""):
         """
         Makes a shrug
         """
         await self.bot.delete_message(ctx.message)
-        await self.bot.say("¯\_(ツ)_/¯")
+        await self.bot.say("¯\_(ツ)_/¯ "+message)
 
     @commands.command(pass_context=True)
-    async def lenny(self, ctx: Context):
+    async def lenny(self, ctx: Context, *, message: str=""):
         """
         Makes a lenny face
         """
         await self.bot.delete_message(ctx.message)
-        await self.bot.say("( ͡° ͜ʖ ͡°)")
+        await self.bot.say("( ͡° ͜ʖ ͡°) "+message)
 
     @commands.command(pass_context=True)
     async def snagavatar(self, ctx: Context, member: discord.Member):
