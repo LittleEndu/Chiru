@@ -23,6 +23,7 @@ class Memes:
         self._message = ""
         self._mentiontimer = 0
         self._lastlisted = []
+        self._undobutton = {}
 
     @commands.command(pass_context=True, invoke_without_command=True)
     async def mememention(self, ctx: Context, *, member: str = ""):
@@ -91,12 +92,20 @@ class Memes:
         await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
     @commands.command(pass_context=True)
-    async def meme(self, ctx: Context, *, searchfor: str=""):
+    async def meme(self, ctx: Context, *, searchfor: str = ""):
         """
         Finds a image file and sends it. Usually sends something.
 
         Will send image that matches most search terms but only if over half are matched
         """
+
+        if ctx.channel.id in await self.bot.get_set(ctx.server, "meme_blacklist"):
+            toDel = await self.bot.say("Chiru: ``No memes in here please.``")
+            await asyncio.sleep(5)
+            await self.bot.delete_message(ctx.message)
+            await self.bot.delete_message(toDel)
+            return
+
         loc = self.bot.config.get("memelocation", "")
         if searchfor != "":
             matches = {x: 0 for x in os.listdir(loc)}
@@ -118,7 +127,7 @@ class Memes:
                         bestmatch = [m]
                     elif matches[m] == matches[bestmatch[0]]:
                         bestmatch += [m]
-        elif len(self._lastlisted)>0:
+        elif len(self._lastlisted) > 0:
             bestmatch = self._lastlisted
         else:
             toDel = await self.bot.say("Chiru: ``You need to use listmemes first if you don't search for anything``")
@@ -239,15 +248,20 @@ class Memes:
             ext = ext.split(".")
             words.append(ext[0])
             ext = "." + ext[-1]
+            words.reverse()
             finalwords = words[:]  # bugfix: will now remove more than one word. It didn't before for some reason
             for w1 in words:
-                for w2 in words:
+                oneskip = True
+                for w2 in finalwords:  # bugfix: will now remove only one duplicate
                     if w1 == w2:
-                        continue
+                        if oneskip:
+                            oneskip = False
+                            continue
                     if re.match(".*(" + re.escape(w1) + ").*", w2):
                         finalwords.remove(w1)
                         break
             name = ""
+            finalwords.reverse()
             for w in finalwords:
                 name += w + " "
             name = name.strip() + ext
@@ -255,10 +269,100 @@ class Memes:
                 os.rename(loc + i, loc + name)
                 fmt += '"' + i + '" --> "' + name + '"\n'
         if fmt != "":
-            await self.bot.say("Chiru: ``Here are the memes I renamed``\n"
-                               "```" + fmt + "```")
+            bb = ""
+            index = 0
+            await self.bot.say("Chiru: ``Here are the memes I renamed``\n")
+            for i in fmt.split("\n"):
+                bb += i + "\n"
+                index += 1
+                if index % 10 == 0:
+                    await self.bot.say("```" + bb + "```")
+                    bb = ""
+                    await asyncio.sleep(0.1)
+            await self.bot.say("```" + bb + "```")
         else:
             await self.bot.say("Chiru: ``All memes are already clean``")
+
+    @commands.group(pass_context=True, invoke_without_command=True)
+    async def addmemeterm(self, ctx: Context, *, input: str):
+        """
+        Will add words to filenames
+
+        Adds first word in input to every meme that matches the other words
+        """
+        if len(input.split()) < 2:
+            await self.bot.say("Chiru: ``You need to atleast one word to search for``")
+            return
+        if input.split()[1] != "to":
+            await self.bot.say('Chiru: ``Second word needs to be "to" as in "addmemeterm something to something else"')
+        toAdd = input.replace("'", "").lower().split()[0]
+        toSearch = input.replace("'", "").lower().split()[2:]
+        loc = self.bot.config.get("memelocation", "")
+        matches = {x: 0 for x in os.listdir(loc)}
+        for j in toSearch:
+            if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
+                toSearch.remove(j)
+        rq = len(toSearch) // 2
+        for i in os.listdir(loc):
+            for j in toSearch:
+                if re.match(".*" + re.escape(j) + ".*", i.lower()):
+                    matches[i] += 1
+        bestmatch = []
+        for m in matches:
+            if matches[m] > rq:
+                if bestmatch == []:
+                    bestmatch = [m]
+                elif matches[m] > matches[bestmatch[0]]:
+                    bestmatch = [m]
+                elif matches[m] == matches[bestmatch[0]]:
+                    bestmatch += [m]
+        self._undobutton = {}
+        for b in bestmatch:
+            self._undobutton[loc + b] = loc + toAdd + " " + b
+            os.rename(loc + b, loc + toAdd + " " + b)
+        fmt = ""
+        index = 0
+        if len(bestmatch) > 0:
+            await self.bot.say("Chiru: ``Here are the new memes``")
+            for m in bestmatch:
+                fmt += "``" + str(index + 1) + ". " + toAdd + " " + m + "``\t\t"
+                index += 1
+                if index % 20 == 0:
+                    await self.bot.say(fmt)
+                    fmt = ""
+            await self.bot.say(fmt)
+        else:
+            await self.bot.say(
+                "Chiru: ``Didn't find any memes for " + str(input.replace("'", "").lower().split()[2:]) + "``")
+
+    @addmemeterm.command(pass_context=True)
+    async def undo(self, ctx: Context):
+        """
+        Undoes the damage
+        """
+        if len(self._undobutton) == 0:
+            await self.bot.say("Chiru: ``There's nothing to undo``")
+            return
+        for i in self._undobutton:
+            os.rename(self._undobutton[i], i)
+        self._undobutton = {}
+        await self.bot.say("Chiru: :ok_hand:")
+
+    @commands.command(pass_context=True)
+    async def banmemes(self, ctx: Context):
+        """
+        Will ban memes in the channel it's said in
+        """
+        await self.bot.add_to_set(ctx.server, "meme_blacklist", ctx.channel.id)
+        await self.bot.delete_message(ctx.message)
+
+    @commands.command(pass_context=True)
+    async def allowmemes(self, ctx: Context):
+        """
+        Will allow memes in the channel it's said in
+        """
+        await self.bot.remove_from_set(ctx.server, "meme_blacklist", ctx.channel.id)
+        await self.bot.delete_message(ctx.message)
 
 
 def setup(bot: Chiru):
