@@ -22,6 +22,7 @@ class Memes:
         self._members = set()
         self._message = ""
         self._mentiontimer = 0
+        self._lastlisted = []
 
     @commands.command(pass_context=True, invoke_without_command=True)
     async def mememention(self, ctx: Context, *, member: str = ""):
@@ -90,33 +91,44 @@ class Memes:
         await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
     @commands.command(pass_context=True)
-    async def meme(self, ctx: Context, *, searchfor: str):
+    async def meme(self, ctx: Context, *, searchfor: str=""):
         """
         Finds a image file and sends it. Usually sends something.
 
         Will send image that matches most search terms but only if over half are matched
         """
         loc = self.bot.config.get("memelocation", "")
-        matches = {x: 0 for x in os.listdir(loc)}
-        searchfor = searchfor.replace("'", "").lower().split()
-        for j in searchfor:
-            if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
-                searchfor.remove(j)
-        rq = len(searchfor) // 2
-        for i in os.listdir(loc):
+        if searchfor != "":
+            matches = {x: 0 for x in os.listdir(loc)}
+            searchfor = searchfor.replace("'", "").lower().split()
             for j in searchfor:
-                if re.match(".*" + re.escape(j) + ".*", i.lower()):
-                    matches[i] += 1
-        bestmatch = []
-        for m in matches:
-            if matches[m] > rq:
-                if bestmatch == []:
-                    bestmatch = [m]
-                elif matches[m] > matches[bestmatch[0]]:
-                    bestmatch = [m]
-                elif matches[m] == matches[bestmatch[0]]:
-                    bestmatch += [m]
+                if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
+                    searchfor.remove(j)
+            rq = len(searchfor) // 2
+            for i in os.listdir(loc):
+                for j in searchfor:
+                    if re.match(".*" + re.escape(j) + ".*", i.lower()):
+                        matches[i] += 1
+            bestmatch = []
+            for m in matches:
+                if matches[m] > rq:
+                    if bestmatch == []:
+                        bestmatch = [m]
+                    elif matches[m] > matches[bestmatch[0]]:
+                        bestmatch = [m]
+                    elif matches[m] == matches[bestmatch[0]]:
+                        bestmatch += [m]
+        elif len(self._lastlisted)>0:
+            bestmatch = self._lastlisted
+        else:
+            toDel = await self.bot.say("Chiru: ``You need to use listmemes first if you don't search for anything``")
+            await asyncio.sleep(5)
+            await self.bot.delete_message(ctx.message)
+            await self.bot.delete_message(toDel)
+            return
+
         if len(bestmatch) > 0:
+            self._lastlisted = []
             fmt = ""
             for m in self._members:
                 fmt += str(m.mention) + " "
@@ -125,7 +137,6 @@ class Memes:
             self._members = set()
             self._message = ""
             await self.bot.delete_message(ctx.message)
-
         else:
             toDel = await self.bot.say("Chiru: ``No image matched the search term``")
             await asyncio.sleep(5)
@@ -165,10 +176,11 @@ class Memes:
                         bestmatch += [m]
             index = 0
             if len(bestmatch) > 0:
+                self._lastlisted = bestmatch
                 for m in bestmatch:
                     fmt += "``" + str(index + 1) + ". " + m + "``\t\t"
                     index += 1
-                    if index % 15 == 0:
+                    if index % 20 == 0:
                         await self.bot.say(fmt)
                         fmt = ""
                 await self.bot.say(fmt)
@@ -182,7 +194,7 @@ class Memes:
             for i in os.listdir(loc):
                 fmt = fmt + "``" + str(index + 1) + ". " + i + "``\t\t"
                 index += 1
-                if index % 15 == 0:
+                if index % 20 == 0:
                     await self.bot.say(fmt)
                     fmt = ""
                     await asyncio.sleep(0.1)
