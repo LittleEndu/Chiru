@@ -2,7 +2,6 @@
 Meme responses
 """
 
-import discord
 import os
 import re
 import asyncio
@@ -22,18 +21,34 @@ class Memes:
         self.bot = bot
         self._members = set()
         self._message = ""
+        self._mentiontimer = 0
 
     @commands.command(pass_context=True, invoke_without_command=True)
-    async def mememention(self, ctx: Context, *, member: discord.Member = None):
+    async def mememention(self, ctx: Context, *, member: str = ""):
         """
         Set a mention for next meme
         """
-        if member != None:
-            self._members.add(member)
+        if member != "":
             await self.bot.delete_message(ctx.message)
             await asyncio.sleep(60)
             if member in self._members:
                 self._members.remove(member)
+            if tempmember != None:
+                self._members.add(tempmember)
+                mytimer = 60
+                self._mentiontimer += 60
+                while self._mentiontimer > 0 and tempmember in self._members:
+                    await asyncio.sleep(1)
+                    if mytimer > 0:
+                        self._mentiontimer -= 1
+                        mytimer -= 1
+                if tempmember in self._members:
+                    self._members.remove(tempmember)
+            else:
+                toDel = await self.bot.say("Chiru: ``Can't find such member``")
+                await asyncio.sleep(5)
+                await self.bot.delete_message(toDel)
+
         else:
             if self._members == set():
                 await self.bot.say("Chiru: ``There's nobody set to be mentioned``")
