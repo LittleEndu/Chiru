@@ -1,12 +1,8 @@
 ## Chiru (散る)
 
-[![Requirements Status](https://requires.io/github/SunDwarf/Chiru/requirements.svg?branch=master)](https://requires.io/github/SunDwarf/Chiru/requirements/?branch=master)
 
 **Chiru** is a specific-purpose Discord bot.  It is not designed to be like the hundreds of dime-a-dozen bots that
 try and do everything.
-
-[Test Server](https://discord.gg/tnBSBMU)
-[Invite to your server](https://discordapp.com/oauth2/authorize?client_id=168643285475131392&scope=bot)
 
 
 ## Setup
