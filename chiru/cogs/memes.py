@@ -30,9 +30,11 @@ class Memes:
         """
         if member != "":
             await self.bot.delete_message(ctx.message)
-            await asyncio.sleep(60)
-            if member in self._members:
-                self._members.remove(member)
+            try:
+                int(member)
+                tempmember = ctx.server.get_member(member)
+            except:
+                tempmember = ctx.server.get_member_named(member)
             if tempmember != None:
                 self._members.add(tempmember)
                 mytimer = 60
