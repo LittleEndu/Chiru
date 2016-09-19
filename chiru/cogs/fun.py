@@ -133,7 +133,7 @@ Mutual servers: {mut}```"""
         """
         await self.bot.say("I'm Chiru - yet another bot.\n"
                            "I was written by Fuyu, the best programmer in the world.\n"
-                           "Join my test server: https://discord.gg/Rh6jAXa")
+                           "https://github.com/LittleEndu/Chiru")
 
     @commands.command(pass_context=True, )
     async def upscale(self, ctx: Context, *, url: str):

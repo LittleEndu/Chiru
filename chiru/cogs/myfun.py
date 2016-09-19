@@ -26,6 +26,13 @@ class MyFun(object):
         self.bot = bot
 
     @commands.command(pass_context=True)
+    async def instadel(self, ctx: Context):
+        """
+        Deletes the message
+        """
+        await self.bot.delete_message(ctx.message)
+
+    @commands.command(pass_context=True)
     async def marco(self, ctx: Context):
         """
         Says "polo"

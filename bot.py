@@ -314,6 +314,7 @@ class Chiru(Bot):
                              .format(message=message, bot=" [BOT]" if message.author.bot else ""))
             if message.author.display_name!=message.author.name:
                 self.logger.info("  Username: {message.author.name}".format(message=message))
+            self.logger.info("  User ID: {message.author.id}".format(message=message))
             self.logger.info("  On channel: #{message.channel.name}".format(message=message))
 
         # Check for a valid server.
