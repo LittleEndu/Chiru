@@ -52,7 +52,7 @@ def _get_command_prefix(bot: 'Chiru', message: discord.Message):
     if bot.config.get("self_bot"):
         return "domo "
     elif bot.config.get("dev"):
-        return "domo "
+        return "desu "
     else:
         return "chiru "
 
@@ -363,7 +363,7 @@ class Chiru(Bot):
         if self._skip_check(message.author, self.user):
             return
 
-        prefix = self._get_prefix(message)
+        prefix = await self._get_prefix(message)
         invoked_prefix = prefix
 
         if not isinstance(prefix, (tuple, list)):

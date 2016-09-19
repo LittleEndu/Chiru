@@ -75,7 +75,8 @@ class Commits(object):
 
         # Give instructions on how to link the repo.
         await self.bot.say(
-            "Linked `{}` to `{}`. PMing you with webhook creation information.".format(repo, ctx.channel.name)
+            ":heavy_check_mark: Linked `{}` to `{}`. "
+            "PMing you with webhook creation information.".format(repo, ctx.channel.name)
         )
         secret = link.secret
 
@@ -95,8 +96,9 @@ class Commits(object):
             port = self.bot._webserver.component.port
             addr = "http://{}:{}/webhook".format(ip, port)
 
-        fmt = "To complete commit linking, add a new webhook to your repo.\n The webhook should point to `{}`, " \
-              "and must have the secret of `{}`.".format(addr, secret)
+        fmt = "To complete commit linking for {}, add a new webhook to your repo.\n " \
+              "The webhook should point to `{}`, " \
+              "and must have the secret of `{}`.".format(repo, addr, secret)
 
         await self.bot.send_message(ctx.author, fmt)
 
@@ -114,6 +116,18 @@ class Commits(object):
             await self.bot.say(":x: This channel is not linked to that repository.")
         else:
             await self.bot.say(":heavy_check_mark: Removed link.")
+
+    @link.command(pass_context=True)
+    @commands.check(checks.is_owner)
+    async def cleanup(self, ctx: Context):
+        """
+        Cleanup stale links.
+
+        You must be the owner to do this.
+        """
+        count = await self.bot.db.cleanup_links()
+
+        await self.bot.say(":heavy_check_mark: Cleaned up **{}** stale commit links.".format(count))
 
 
 def setup(bot: Chiru):
