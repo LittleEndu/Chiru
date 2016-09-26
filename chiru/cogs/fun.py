@@ -185,6 +185,9 @@ Mutual servers: {mut}```"""
         final_c = ""
         for char in text:
             if not ord(char) in range(33, 127):
+                if ord(char) == 32:
+                    final_c += "\t"
+                    continue
                 final_c += char
                 continue
             # Add 65248 to the ord() value to get the fullwidth counterpart.

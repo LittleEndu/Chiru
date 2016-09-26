@@ -31,13 +31,13 @@ class Memes:
         Set a mention for next meme
         """
         if member != "":
-            await self.bot.delete_message(ctx.message)
             try:
                 int(member)
                 tempmember = ctx.server.get_member(member)
             except:
                 tempmember = ctx.server.get_member_named(member)
             if tempmember != None:
+                await self.bot.delete_message(ctx.message)
                 self._members.add(tempmember)
                 mytimer = 60
                 self._mentiontimer += 60
@@ -51,6 +51,7 @@ class Memes:
             else:
                 toDel = await self.bot.say("Chiru: ``Can't find such member``")
                 await asyncio.sleep(5)
+                await self.bot.delete_message(ctx.message)
                 await self.bot.delete_message(toDel)
 
         else:
@@ -91,6 +92,27 @@ class Memes:
         self._message = ""
         await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
+    def getBestMatch(self, searchfor, loc):
+        matches = {x: 0 for x in os.listdir(loc)}
+        for j in searchfor:
+            if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
+                searchfor.remove(j)
+        rq = len(searchfor) // 2
+        for i in os.listdir(loc):
+            for j in searchfor:
+                if re.match(".*" + re.escape(j) + ".*", i.lower()):
+                    matches[i] += 1
+        bestmatch = []
+        for m in matches:
+            if matches[m] > rq:
+                if bestmatch == []:
+                    bestmatch = [m]
+                elif matches[m] > matches[bestmatch[0]]:
+                    bestmatch = [m]
+                elif matches[m] == matches[bestmatch[0]]:
+                    bestmatch += [m]
+        return bestmatch
+
     @commands.command(pass_context=True)
     async def meme(self, ctx: Context, *, searchfor: str = ""):
         """
@@ -99,7 +121,7 @@ class Memes:
         Will send image that matches most search terms but only if over half are matched
         """
 
-        if ctx.channel.id in await self.bot.get_set(ctx.server, "meme_blacklist"):
+        if ctx.channel.id in await self.bot.get_set(ctx.server, "meme_blacklist") and searchfor!="":
             toDel = await self.bot.say("Chiru: ``No memes in here please.``")
             await asyncio.sleep(5)
             await self.bot.delete_message(ctx.message)
@@ -108,25 +130,8 @@ class Memes:
 
         loc = self.bot.config.get("memelocation", "")
         if searchfor != "":
-            matches = {x: 0 for x in os.listdir(loc)}
             searchfor = searchfor.replace("'", "").lower().split()
-            for j in searchfor:
-                if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
-                    searchfor.remove(j)
-            rq = len(searchfor) // 2
-            for i in os.listdir(loc):
-                for j in searchfor:
-                    if re.match(".*" + re.escape(j) + ".*", i.lower()):
-                        matches[i] += 1
-            bestmatch = []
-            for m in matches:
-                if matches[m] > rq:
-                    if bestmatch == []:
-                        bestmatch = [m]
-                    elif matches[m] > matches[bestmatch[0]]:
-                        bestmatch = [m]
-                    elif matches[m] == matches[bestmatch[0]]:
-                        bestmatch += [m]
+            bestmatch = self.getBestMatch(searchfor, loc)
         elif len(self._lastlisted) > 0:
             bestmatch = self._lastlisted
         else:
@@ -141,11 +146,17 @@ class Memes:
             fmt = ""
             for m in self._members:
                 fmt += str(m.mention) + " "
-            await self.bot.send_file(ctx.channel, loc + bestmatch[randint(0, len(bestmatch) - 1)],
-                                     content=fmt + " " + self._message)
-            self._members = set()
-            self._message = ""
-            await self.bot.delete_message(ctx.message)
+            try:
+                await self.bot.send_file(ctx.channel, loc + bestmatch[randint(0, len(bestmatch) - 1)],
+                                         content=fmt + " " + self._message)
+                self._members = set()
+                self._message = ""
+                await self.bot.delete_message(ctx.message)
+            except:
+                toDel = await self.bot.say("Chiru: ``FORBIDDEN``")
+                await asyncio.sleep(5)
+                await self.bot.delete_message(ctx.message)
+                await self.bot.delete_message(toDel)
         else:
             toDel = await self.bot.say("Chiru: ``No image matched the search term``")
             await asyncio.sleep(5)
@@ -162,27 +173,10 @@ class Memes:
         loc = self.bot.config.get("memelocation", "")
         if searchfor != "":
             ##They serched for something so we'll use dictonary
-            matches = {x: 0 for x in os.listdir(loc)}
             ss = searchfor
             fmt = ""
             searchfor = searchfor.replace("'", "").lower().split()
-            for j in searchfor:
-                if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
-                    searchfor.remove(j)
-            rq = len(searchfor) // 2
-            for i in os.listdir(loc):
-                for j in searchfor:
-                    if re.match(".*" + re.escape(j) + ".*", i.lower()):
-                        matches[i] += 1
-            bestmatch = []
-            for m in matches:
-                if matches[m] > rq:
-                    if bestmatch == []:
-                        bestmatch = [m]
-                    elif matches[m] > matches[bestmatch[0]]:
-                        bestmatch = [m]
-                    elif matches[m] == matches[bestmatch[0]]:
-                        bestmatch += [m]
+            bestmatch = self.getBestMatch(searchfor, loc)
             index = 0
             if len(bestmatch) > 0:
                 self._lastlisted = bestmatch
@@ -226,10 +220,12 @@ class Memes:
         if len(cantfind) > 0:
             fmt = "```These memes can't be found:\n"
             if len(cantfind) == 1:
-                fmt = "```This meme can't be found: "
+                fmt = "``This meme can't be found: "
             for i in cantfind:
                 fmt += i + "\n"
-            fmt = fmt + "```"
+            fmt += "``"
+            if len(fmt.split("\n")) > 2:
+                fmt += "`"
             await self.bot.say(fmt)
         else:
             await self.bot.say("Chiru: ``All memes have uniqe enough filenames.``")
@@ -263,8 +259,8 @@ class Memes:
             name = ""
             finalwords.reverse()
             for w in finalwords:
-                name += w + " "
-            name = name.strip() + ext
+                name += w.replace("'", "").lower() + " "
+            name = name.strip() + ext.replace("'", "").lower()
             if i != name:
                 os.rename(loc + i, loc + name)
                 fmt += '"' + i + '" --> "' + name + '"\n'
@@ -298,24 +294,7 @@ class Memes:
         toAdd = input.replace("'", "").lower().split()[0]
         toSearch = input.replace("'", "").lower().split()[2:]
         loc = self.bot.config.get("memelocation", "")
-        matches = {x: 0 for x in os.listdir(loc)}
-        for j in toSearch:
-            if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
-                toSearch.remove(j)
-        rq = len(toSearch) // 2
-        for i in os.listdir(loc):
-            for j in toSearch:
-                if re.match(".*" + re.escape(j) + ".*", i.lower()):
-                    matches[i] += 1
-        bestmatch = []
-        for m in matches:
-            if matches[m] > rq:
-                if bestmatch == []:
-                    bestmatch = [m]
-                elif matches[m] > matches[bestmatch[0]]:
-                    bestmatch = [m]
-                elif matches[m] == matches[bestmatch[0]]:
-                    bestmatch += [m]
+        bestmatch = self.getBestMatch(toSearch, loc)
         self._undobutton = {}
         for b in bestmatch:
             self._undobutton[loc + b] = loc + toAdd + " " + b

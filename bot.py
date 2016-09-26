@@ -341,12 +341,15 @@ class Chiru(Bot):
                                                          "this.")
                 return
             else:
+
                 if isinstance(e, commands.errors.CommandInvokeError):
                     lines = traceback.format_exception(type(e), e.__cause__, e.__cause__.__traceback__)
                 else:
                     lines = traceback.format_exception(type(e), e, e.__traceback__)
-                await self.send_message(message.channel, ":no_entry: An error has occurred. This has been logged.")
                 self.logger.error(''.join(lines))
+                if self.is_self_bot():
+                    return
+                await self.send_message(message.channel, ":no_entry: An error has occurred. This has been logged.")
 
     async def send_message(self, destination, content, *, tts=False):
         content = "\u200b{}".format(content)

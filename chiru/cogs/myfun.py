@@ -7,6 +7,7 @@ import re
 import aiohttp
 import discord
 import google
+import asyncio
 from dateutil.parser import parse
 from datetime import datetime
 from discord.ext import commands
@@ -26,11 +27,21 @@ class MyFun(object):
         self.bot = bot
 
     @commands.command(pass_context=True)
-    async def instadel(self, ctx: Context):
+    async def instadel(self, ctx: Context, *, msg: str=""):
         """
         Deletes the message
         """
-        await self.bot.delete_message(ctx.message)
+        try:
+            time = int(msg.split()[0])
+        except:
+            time = 0
+        await asyncio.sleep(time)
+        try:
+            await self.bot.delete_message(ctx.message)
+        except:
+            self.bot.logger.error("Message deleted manually")
+
+
 
     @commands.command(pass_context=True)
     async def marco(self, ctx: Context):
@@ -38,6 +49,14 @@ class MyFun(object):
         Says "polo"
         """
         await self.bot.say("polo")
+
+    @commands.command(pass_context=True)
+    async def soon(self, ctx: Context, *, message: str = ""):
+        """
+        Makes a soon tm
+        """
+        await self.bot.delete_message(ctx.message)
+        await self.bot.say("soon\u2122" + message)
 
     @commands.command(pass_context=True)
     async def shrug(self, ctx: Context, *, message: str=""):
