@@ -126,6 +126,9 @@ class Chiru(Bot):
 
         self.start_time = time.time()
 
+        self.app_id = ""
+        self.owner_id = ""
+
         # Create the rotation background task.
         self.loop.create_task(self._rotate_game_text())
 
@@ -136,7 +139,7 @@ class Chiru(Bot):
         await self.wait_until_ready()
         texts = self.config.get("game_texts", [])
         while True:
-            await self.change_status(game=discord.Game(name=random.choice(texts)))
+            await self.change_presence(game=discord.Game(name=random.choice(texts)))
             await asyncio.sleep(15)
 
     @property
@@ -262,10 +265,13 @@ class Chiru(Bot):
     async def on_ready(self):
         self.logger.info("Loaded Chiru, logged in as `{}`.".format(self.user.name))
         try:
-            id = (await self.application_info()).id
-            self.logger.info("Invite link: {}".format(discord.utils.oauth_url(id)))
+            app_info = await self.application_info()
+            self.app_id = app_info.id
+            self.owner_id = app_info.owner.id
+
+            self.logger.info("Invite link: {}".format(discord.utils.oauth_url(self.app_id)))
         except discord.Forbidden:
-            pass
+            self.owner_id = self.user.id
         redis = await self.get_redis()
         if not redis:
             return
@@ -336,7 +342,7 @@ class Chiru(Bot):
             if isinstance(e, (commands.errors.BadArgument, commands.errors.MissingRequiredArgument)):
                 await self.send_message(message.channel, ":x: Bad argument: {}".format(' '.join(e.args)))
                 return
-            elif isinstance(e, (commands.errors.CheckFailure)):
+            elif isinstance(e, commands.errors.CheckFailure):
                 await self.send_message(message.channel, ":x: Check failed. You probably don't have permission to do "
                                                          "this.")
                 return
