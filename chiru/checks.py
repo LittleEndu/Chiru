@@ -2,7 +2,7 @@ from override import Context
 
 
 def is_owner(ctx: Context):
-    return ctx.message.author.id == "188597497294225408"
+    return ctx.message.author.id == "141545699442425856"
 
 
 def has_manage_messages(ctx: Context):

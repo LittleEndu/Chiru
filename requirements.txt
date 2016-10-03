@@ -31,7 +31,7 @@ requests-oauthlib==0.6.2
 six==1.10.0
 SQLAlchemy==1.0.14
 typeguard==1.2.2
-#uvloop==0.5.1
+uvloop==0.5.1
 websockets==3.1
 youtube-dl==2016.8.10
 psutil
