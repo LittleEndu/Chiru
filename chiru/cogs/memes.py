@@ -121,12 +121,15 @@ class Memes:
         Will send image that matches most search terms but only if over half are matched
         """
 
-        if ctx.channel.id in await self.bot.get_set(ctx.server, "meme_blacklist") and searchfor!="":
+        if ctx.channel.id in await self.bot.get_set(ctx.server, "meme_blacklist"):
             toDel = await self.bot.say("Chiru: ``No memes in here please.``")
-            await asyncio.sleep(5)
-            await self.bot.delete_message(ctx.message)
+            msg = await self.bot.wait_for_message(timeout=5, author=ctx.author, channel=ctx.channel, content="meme anyway")
             await self.bot.delete_message(toDel)
-            return
+            if msg == None:
+                await self.bot.delete_message(ctx.message)
+                return
+            else:
+                await self.bot.delete_message(msg)
 
         loc = self.bot.config.get("memelocation", "")
         if searchfor != "":
@@ -229,6 +232,20 @@ class Memes:
             await self.bot.say(fmt)
         else:
             await self.bot.say("Chiru: ``All memes have uniqe enough filenames.``")
+        toobig = []
+        for m in os.listdir(loc):
+            if os.stat(loc+m).st_size>8000000:
+                toobig += [m]
+        if len(toobig)>0:
+            fmt = "``` These memes are too big:\n"
+            if len(toobig) == 1:
+                fmt = "``This meme is too big: "
+            for i in toobig:
+                fmt += i + "\n"
+            fmt += "``"
+            if len(fmt.split("\n")) > 2:
+                fmt += "`"
+            await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
     async def cleanmemes(self, ctx: Context):

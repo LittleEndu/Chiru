@@ -27,7 +27,7 @@ class MyFun(object):
         self.bot = bot
 
     @commands.command(pass_context=True)
-    async def instadel(self, ctx: Context, *, msg: str=""):
+    async def instadel(self, ctx: Context, *, msg: str = ""):
         """
         Deletes the message
         """
@@ -41,6 +41,15 @@ class MyFun(object):
         except:
             self.bot.logger.error("Message deleted manually")
 
+    # @commands.command(pass_context=True)
+    # async def wall(self, ctx: Context):
+    #     """
+    #     Makes a wall to hide stuff
+    #     """
+    #     fmt = ".\n"
+    #     for i in range(50):
+    #         fmt += ".\n"
+    #     await self.bot.say(fmt)
 
 
     @commands.command(pass_context=True)
@@ -59,20 +68,28 @@ class MyFun(object):
         await self.bot.say("soon\u2122" + message)
 
     @commands.command(pass_context=True)
-    async def shrug(self, ctx: Context, *, message: str=""):
+    async def give(self, ctx: Context, *, message: str = ""):
+        """
+        Makes a soon tm
+        """
+        await self.bot.delete_message(ctx.message)
+        await self.bot.say("༼ つ ◕\\_◕ ༽つ " + message + " ༼ つ ◕\\_◕ ༽つ")
+
+    @commands.command(pass_context=True)
+    async def shrug(self, ctx: Context, *, message: str = ""):
         """
         Makes a shrug
         """
         await self.bot.delete_message(ctx.message)
-        await self.bot.say("¯\_(ツ)_/¯ "+message)
+        await self.bot.say("¯\_(ツ)_/¯ " + message)
 
     @commands.command(pass_context=True)
-    async def lenny(self, ctx: Context, *, message: str=""):
+    async def lenny(self, ctx: Context, *, message: str = ""):
         """
         Makes a lenny face
         """
         await self.bot.delete_message(ctx.message)
-        await self.bot.say("( ͡° ͜ʖ ͡°) "+message)
+        await self.bot.say("( ͡° ͜ʖ ͡°) " + message)
 
     @commands.command(pass_context=True)
     async def snagavatar(self, ctx: Context, member: discord.Member):

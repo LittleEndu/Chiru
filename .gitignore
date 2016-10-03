@@ -142,3 +142,6 @@ selfbot2.yml
 
 images/
 volumes/
+.google-cookie
+.idea/
+logs/
