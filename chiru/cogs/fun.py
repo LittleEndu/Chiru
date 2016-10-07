@@ -89,23 +89,21 @@ Joined: {jr}
 Colour: {member.colour}
 Roles: {roles}
 
-Avatar URL: <{member.avatar_url}>
-
 Mutual servers: {mut}```"""
         await self.bot.say(fmt.format(m=str(member), member=member,
                                       cr=member.created_at, jr=member.joined_at,
-                                      mut=self._calculate_mutual_servers(member),
+                                      mut=str(self._calculate_mutual_servers(member)),
                                       roles=', '.join(util.safe_roles(member.roles)))
                            )
 
     def _calculate_mutual_servers(self, member: discord.Member):
         # Calculates mutual servers.
-        count = 0
+        serverlist = []
         for serv in self.bot.servers:
             assert isinstance(serv, discord.Server)
             if serv.get_member(member.id):
-                count += 1
-        return count
+                serverlist += [serv.name]
+        return serverlist
 
     def _search_google(self, fn, query):
         """

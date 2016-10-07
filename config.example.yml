@@ -3,6 +3,10 @@
 # Bot's token.
 oauth2_token: ""
 
+# Spice_api credentials
+mal_username: ""
+mal_password: ""
+
 # Redis data.
 redis:
   host: 127.0.0.1

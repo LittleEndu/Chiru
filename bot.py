@@ -316,7 +316,7 @@ class Chiru(Bot):
 
         if not isinstance(message.channel, discord.PrivateChannel):
             self.logger.info("Recieved message: {message.content}".format(message=message))
-            self.logger.info("  From: {message.author.display_name}{bot}"
+            self.logger.info("  From{bot}: {message.author.display_name}"
                              .format(message=message, bot=" [BOT]" if message.author.bot else ""))
             if message.author.display_name!=message.author.name:
                 self.logger.info("  Username: {message.author.name}".format(message=message))
