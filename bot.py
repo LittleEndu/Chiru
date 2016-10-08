@@ -199,7 +199,7 @@ class Chiru(Bot):
         """
         async with (await self.get_redis()).get() as conn:
             assert isinstance(conn, aioredis.Redis)
-            built = "cfg:{}:{}".format(server, key)
+            built = "cfg:{}:{}".format(server.id, key)
             x = await conn.smembers(built)
 
             m = []
@@ -218,7 +218,7 @@ class Chiru(Bot):
         """
         async with (await self.get_redis()).get() as conn:
             assert isinstance(conn, aioredis.Redis)
-            built = "cfg:{}:{}".format(server, key)
+            built = "cfg:{}:{}".format(server.id, key)
             x = await conn.sadd(built, item.encode())
 
             return x
@@ -229,7 +229,7 @@ class Chiru(Bot):
         """
         async with (await self.get_redis()).get() as conn:
             assert isinstance(conn, aioredis.Redis)
-            built = "cfg:{}:{}".format(server, key)
+            built = "cfg:{}:{}".format(server.id, key)
             x = await conn.srem(built, item.encode())
 
             return x
@@ -240,7 +240,7 @@ class Chiru(Bot):
         """
         async with (await self.get_redis()).get() as conn:
             assert isinstance(conn, aioredis.Redis)
-            built = "cfg:{}:{}".format(server, key)
+            built = "cfg:{}:{}".format(server.id, key)
             x = await conn.get(built)
             if isinstance(x, bytes):
                 return x.decode()
@@ -257,8 +257,14 @@ class Chiru(Bot):
     async def set_config(self, server: discord.Server, key: str, value, **kwargs):
         async with (await self.get_redis()).get() as conn:
             assert isinstance(conn, aioredis.Redis)
-            built = "cfg:{}:{}".format(server, key)
+            built = "cfg:{}:{}".format(server.id, key)
             return await conn.set(built, value, **kwargs)
+
+    async def delete_config(self, server: discord.Server, key: str):
+        async with (await self.get_redis()).get() as conn:
+            assert isinstance(conn, aioredis.Redis)
+            built = "cfg:{}:{}".format(server.id, key)
+            return await conn.delete(built)
 
     # endregion
 
