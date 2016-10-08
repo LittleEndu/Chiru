@@ -38,6 +38,12 @@ class Fuyu:
             role = discord.utils.get(member.server.roles, name="Bots")
             await self.bot.add_roles(member, role)
 
+        # Auto-nickname them.
+        dt = datetime.datetime.now()
+        if dt.month == 10:
+            nickname = "spooky {}".format(member.name)
+            await self.bot.change_nickname(member, nickname)
+
     @commands.command(pass_context=True)
     @commands.check(fuyu_check)
     async def addbot(self, ctx: Context, client_id: int):
@@ -70,9 +76,11 @@ class Fuyu:
             js = await response.json()
             if status != 200:
                 await self.bot.say("\N{NO ENTRY SIGN} Failed to add bot to server! Error `{}`".format(js))
-                print(js)
             else:
-                await self.bot.say("\N{THUMBS UP SIGN} Added new bot.")
+                if 'location' in js and 'invalid_request' in js['location']:
+                    await self.bot.say("\N{NO ENTRY SIGN} Invalid client ID.")
+                else:
+                    await self.bot.say("\N{THUMBS UP SIGN} Added new bot.")
 
 
 def setup(bot: Chiru):
