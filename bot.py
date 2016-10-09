@@ -319,6 +319,11 @@ class Chiru(Bot):
 
         if not isinstance(message.channel, discord.PrivateChannel):
             self.logger.info("Recieved message: {message.content}".format(message=message))
+            if len(message.attachments)>0:
+                inf = "  File urls: "
+                for i in message.attachments:
+                    inf += "{}\n".format(i['url'])
+                self.logger.info(inf[:-1])
             self.logger.info("  From{bot}: {message.author.display_name}"
                              .format(message=message, bot=" [BOT]" if message.author.bot else ""))
             if message.author.display_name!=message.author.name:
