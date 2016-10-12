@@ -5,6 +5,9 @@ Meme responses
 import os
 import re
 import asyncio
+import json
+import discord
+import aiohttp
 from random import randint
 from discord.ext import commands
 
@@ -24,6 +27,15 @@ class Memes:
         self._mentiontimer = 0
         self._lastlisted = []
         self._undobutton = {}
+        self._lastimage = None
+        self._lastextension = ""
+        self._loc = self.bot.config.get("memelocation", "")
+        if not os.path.isdir(self._loc + "ignore"):
+            os.makedirs(self._loc + "ignore")
+        self._blacklist = dict()
+        if os.path.isfile(self._loc + "ignore/memes.json"):
+            with open(self._loc + "ignore/memes.json", encoding="UTF-8") as file:
+                self._blacklist = json.load(file)
 
     @commands.command(pass_context=True, invoke_without_command=True)
     async def mememention(self, ctx: Context, *, member: str = ""):
@@ -93,12 +105,14 @@ class Memes:
         await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
     def getBestMatch(self, searchfor, loc):
-        matches = {x: 0 for x in os.listdir(loc)}
+        matches = {x: 0 for x in os.listdir(loc) if os.path.isfile(os.path.join(loc, x))}
         for j in searchfor:
             if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
                 searchfor.remove(j)
         rq = len(searchfor) // 2
         for i in os.listdir(loc):
+            if not os.path.isfile(os.path.join(loc, i)):
+                continue
             for j in searchfor:
                 if re.match(".*" + re.escape(j) + ".*", i.lower()):
                     matches[i] += 1
@@ -120,19 +134,19 @@ class Memes:
 
         Will send image that matches most search terms but only if over half are matched
         """
+        if ctx.server.id in self._blacklist:
+            if ctx.channel.id in self._blacklist[ctx.server.id]:
+                toDel = await self.bot.say("Chiru: ``No memes in here please.``")
+                msg = await self.bot.wait_for_message(timeout=10, author=ctx.author, channel=ctx.channel,
+                                                      content="meme anyway")
+                await self.bot.delete_message(toDel)
+                if msg == None:
+                    await self.bot.delete_message(ctx.message)
+                    return
+                else:
+                    await self.bot.delete_message(msg)
 
-        if ctx.channel.id in await self.bot.get_set(ctx.server, "meme_blacklist"):
-            toDel = await self.bot.say("Chiru: ``No memes in here please.``")
-            msg = await self.bot.wait_for_message(timeout=10, author=ctx.author, channel=ctx.channel,
-                                                  content="meme anyway")
-            await self.bot.delete_message(toDel)
-            if msg == None:
-                await self.bot.delete_message(ctx.message)
-                return
-            else:
-                await self.bot.delete_message(msg)
-
-        loc = self.bot.config.get("memelocation", "")
+        loc = self._loc
         if searchfor != "":
             searchfor = searchfor.replace("'", "").lower().split()
             bestmatch = self.getBestMatch(searchfor, loc)
@@ -174,7 +188,7 @@ class Memes:
 
         Memes listed all have a chance to appear when same string is used on meme command
         """
-        loc = self.bot.config.get("memelocation", "")
+        loc = self._loc
         if searchfor != "":
             ##They serched for something so we'll use dictonary
             ss = searchfor
@@ -213,9 +227,13 @@ class Memes:
         Checks if every meme can be used.
         """
         cantfind = []
-        loc = self.bot.config.get("memelocation", "")
+        loc = self._loc
         for m in os.listdir(loc):
+            if not os.path.isfile(os.path.join(loc, m)):
+                continue
             for j in os.listdir(loc):
+                if not os.path.isfile(os.path.join(loc, j)):
+                    continue
                 if m == j:
                     continue
                 if all(re.match(".*(" + n.lower() + ").*", j.lower()) for n in m.replace(".", " ").split()):
@@ -253,9 +271,11 @@ class Memes:
         """
         Removes repeat words from file names
         """
-        loc = self.bot.config.get("memelocation", "")
+        loc = self._loc
         fmt = ""
         for i in os.listdir(loc):
+            if not os.path.isfile(os.path.join(loc, i)):
+                continue
             words = i.lower().split()
             ext = words[-1]
             words.remove(ext)
@@ -311,7 +331,7 @@ class Memes:
             await self.bot.say('Chiru: ``Second word needs to be "to" as in "addmemeterm something to something else"')
         toAdd = input.replace("'", "").lower().split()[0]
         toSearch = input.replace("'", "").lower().split()[2:]
-        loc = self.bot.config.get("memelocation", "")
+        loc = self._loc
         bestmatch = self.getBestMatch(toSearch, loc)
         self._undobutton = {}
         for b in bestmatch:
@@ -350,7 +370,12 @@ class Memes:
         """
         Will ban memes in the channel it's said in
         """
-        await self.bot.add_to_set(ctx.server, "meme_blacklist", ctx.channel.id)
+        if not ctx.server.id in self._blacklist:
+            self._blacklist[ctx.server.id] = [ctx.channel.id]
+        else:
+            self._blacklist[ctx.server.id].append(ctx.channel.id)
+        with open(self._loc + "ignore/memes.json", "w+", encoding="UTF-8") as file:
+            json.dump(self._blacklist, file)
         await self.bot.delete_message(ctx.message)
 
     @commands.command(pass_context=True)
@@ -358,7 +383,70 @@ class Memes:
         """
         Will allow memes in the channel it's said in
         """
-        await self.bot.remove_from_set(ctx.server, "meme_blacklist", ctx.channel.id)
+        if ctx.server.id in self._blacklist:
+            if ctx.channel.id in self._blacklist[ctx.server.id]:
+                self._blacklist[ctx.server.id].remove(ctx.channel.id)
+        with open(self._loc + "ignore/memes.json", "w+", encoding="UTF-8") as file:
+            json.dump(self._blacklist, file)
+        await self.bot.delete_message(ctx.message)
+
+    @commands.group(pass_context=True, invoke_without_command=True)
+    async def snagmeme(self, ctx: Context):
+        """
+        Searches the logs and saves the first image it finds
+        """
+        urls = []
+        iterator = self.bot.logs_from(ctx.channel)
+        reg = re.compile("(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?")
+        async for m in iterator:
+            assert isinstance(m, discord.Message)
+            if len(m.attachments) > 0:
+                if m.attachments[0]['url'].split(".")[-1] in ['jpg', 'png', 'gif']:
+                    urls.append(m.attachments[0]['url'])
+            elif reg.match(m.content):
+                url = reg.match(m.content).group()
+                if url.split(".")[-1] in ['jpg', 'png', 'gif']:
+                    urls.append(url)
+
+        if len(urls) == 0:
+            await self.bot.say("Didn't find any image files sent trough discord.")
+            return
+
+        for u in urls:
+            await self.bot.say("Do you want to save ``{}``?".format(u.split("/")[-1]))
+            mmm = await self.bot.wait_for_message(timeout=10, author=ctx.author, channel=ctx.channel)
+            if mmm.content[0].lower() == "n":
+                continue
+            elif mmm.content[0].lower() == "y":
+                await self.bot.say("Saving ``{}``".format(u.split("/")[-1]))
+                self._lastextension = u.split(".")[-1]
+                with aiohttp.ClientSession() as session:
+                    async with session.get(url=u) as response:
+                        self._lastimage = await response.read()
+                return
+            else:
+                return
+        
+        await self.bot.say("Wow. No more images found.")
+
+    @snagmeme.command(pass_context=True)
+    async def saveas(self, ctx: Context, *, name: str):
+        """
+        Used to save the image
+        """
+
+        with open(os.path.join(self._loc, "{}.{}".format(name, self._lastextension)), "wb") as file:
+            file.write(self._lastimage)
+            self._lastimage = None
+            await self.bot.delete_message(ctx.message)
+            await self.bot.say("Saved as {}".format(file.name.split("/")[-1]))
+
+    @snagmeme.command(pass_context=True)
+    async def reset(self, ctx: Context):
+        """
+        Resets the last saved image
+        """
+        self._lastimage = None
         await self.bot.delete_message(ctx.message)
 
 

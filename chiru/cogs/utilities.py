@@ -33,11 +33,13 @@ class Utilities:
         Gets the permissions of a permissions number.
         """
         perms = discord.Permissions(number)
-        fmt = "```http\n"
+        fmt = ""
+        index = 0
         for name, perm in perms:
-            fmt += "{}: {}\n".format(name.replace("_", " ").capitalize(), perm)
-
-        fmt += "```"
+            fmt += "``{}: {}``\t".format(name.replace("_", " ").capitalize(), "\u2713" if perm else "\u2717")
+            index += 1
+            if index % 5 == 0:
+                fmt += "\n"
         await self.bot.say(fmt)
 
     @commands.command(pass_context=True)

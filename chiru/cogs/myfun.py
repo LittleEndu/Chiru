@@ -6,12 +6,8 @@ import re
 
 import aiohttp
 import discord
-import google
 import asyncio
-from dateutil.parser import parse
-from datetime import datetime
 from discord.ext import commands
-from io import BytesIO
 
 from bot import Chiru
 from chiru import util

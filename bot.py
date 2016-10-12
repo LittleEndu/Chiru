@@ -30,7 +30,6 @@ from kyoukai.context import HTTPRequestContext
 import itsdangerous
 
 from logbook.compat import redirect_logging
-from logbook import StreamHandler
 
 from override import Context
 
