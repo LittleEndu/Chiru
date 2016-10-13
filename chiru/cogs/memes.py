@@ -27,6 +27,7 @@ class Memes:
         self._mentiontimer = 0
         self._lastlisted = []
         self._undobutton = {}
+        self._savedel = []
         self._lastimage = None
         self._lastextension = ""
         self._loc = self.bot.config.get("memelocation", "")
@@ -391,43 +392,66 @@ class Memes:
         await self.bot.delete_message(ctx.message)
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    async def snagmeme(self, ctx: Context):
+    async def snagmeme(self, ctx: Context, channel=None):
         """
         Searches the logs and saves the first image it finds
         """
+        self._savedel += [ctx.message]
         urls = []
-        iterator = self.bot.logs_from(ctx.channel)
+        extensions = ['jpeg', 'jpg', 'png', 'gif']
+        if channel == None:
+            iterator = self.bot.logs_from(ctx.channel)
+        else:
+            iterator = self.bot.logs_from(self.bot.get_channel(channel))
         reg = re.compile("(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?")
         async for m in iterator:
-            assert isinstance(m, discord.Message)
-            if len(m.attachments) > 0:
-                if m.attachments[0]['url'].split(".")[-1] in ['jpg', 'png', 'gif']:
-                    urls.append(m.attachments[0]['url'])
-            elif reg.match(m.content):
-                url = reg.match(m.content).group()
-                if url.split(".")[-1] in ['jpg', 'png', 'gif']:
-                    urls.append(url)
+            if isinstance(m, discord.Message):
+                if len(m.attachments) > 0:
+                    if m.attachments[0]['url'].split(".")[-1].lower() in extensions:
+                        urls.append(m.attachments[0]['url'])
+                elif reg.match(m.content):
+                    url = reg.match(m.content).group()
+                    if url.split(".")[-1].lower() in extensions:
+                        urls.append(url)
 
         if len(urls) == 0:
-            await self.bot.say("Didn't find any image files sent trough discord.")
+            await self.bot.say("Didn't find any images.")
             return
 
-        for u in urls:
-            await self.bot.say("Do you want to save ``{}``?".format(u.split("/")[-1]))
-            mmm = await self.bot.wait_for_message(timeout=10, author=ctx.author, channel=ctx.channel)
-            if mmm.content[0].lower() == "n":
-                continue
-            elif mmm.content[0].lower() == "y":
-                await self.bot.say("Saving ``{}``".format(u.split("/")[-1]))
-                self._lastextension = u.split(".")[-1]
-                with aiohttp.ClientSession() as session:
-                    async with session.get(url=u) as response:
-                        self._lastimage = await response.read()
+        fmt = "Choose what image:\n"
+        forurls = urls[:10]
+        forurls.reverse()
+        for u in range(len(forurls)):
+            fmt += "{}. ``{}``\n".format(str(u + 1), forurls[u].split("/")[-1])
+        self._savedel += [await self.bot.say(fmt)]
+
+        index = 0
+        while True:
+            answer = await self.bot.wait_for_message(channel=ctx.channel, author=ctx.author)
+            if answer.content[0].lower() in ['c', 'r']:
+                self._savedel += [answer, await self.bot.say("Oki, canceling!")]
+                delNow = self._savedel[:]
+                self._savedel = []
+                await asyncio.sleep(2)
+                for m in delNow:
+                    await self.bot.delete_message(m)
                 return
-            else:
-                return
-        
-        await self.bot.say("Wow. No more images found.")
+            try:
+                index = int(answer.content) - 1
+                forurls[index]
+                await self.bot.delete_message(answer)
+                break
+            except:
+                await self.bot.delete_message(answer)
+                self._savedel += [await self.bot.say("Must be number and in range!")]
+
+        self._savedel += [
+            await self.bot.say("Saving ``{}``\nWaiting for file name...".format(forurls[index].split("/")[-1]))]
+        self._lastextension = forurls[index].split(".")[-1]
+        with aiohttp.ClientSession() as session:
+            async with session.get(url=forurls[index]) as response:
+                self._lastimage = await response.read()
+        return
 
     @snagmeme.command(pass_context=True)
     async def saveas(self, ctx: Context, *, name: str):
@@ -435,11 +459,18 @@ class Memes:
         Used to save the image
         """
 
-        with open(os.path.join(self._loc, "{}.{}".format(name, self._lastextension)), "wb") as file:
+        with open(os.path.join(self._loc, "{}.{}".format(name.replace("'", "").lower(), self._lastextension)),
+                  "wb") as file:
             file.write(self._lastimage)
             self._lastimage = None
             await self.bot.delete_message(ctx.message)
-            await self.bot.say("Saved as {}".format(file.name.split("/")[-1]))
+            self._savedel += [await self.bot.say("Saved as ``{}``".format(file.name.split("/")[-1]))]
+            delNow = self._savedel[:]
+            self._savedel = []
+            await asyncio.sleep(5)
+            for m in delNow:
+                await self.bot.delete_message(m)
+            self._savedel = []
 
     @snagmeme.command(pass_context=True)
     async def reset(self, ctx: Context):
@@ -447,7 +478,12 @@ class Memes:
         Resets the last saved image
         """
         self._lastimage = None
-        await self.bot.delete_message(ctx.message)
+        self._savedel += [ctx.message]
+        delNow = self._savedel[:]
+        self._savedel = []
+        await asyncio.sleep(5)
+        for m in delNow:
+            await self.bot.delete_message(m)
 
 
 def setup(bot: Chiru):
