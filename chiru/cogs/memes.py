@@ -421,11 +421,12 @@ class Memes:
         fmt = "Choose what image:\n"
         forurls = urls[:10]
         forurls.reverse()
-        for u in range(len(forurls)):
-            fmt += "{}. ``{}``\n".format(str(u + 1), forurls[u].split("/")[-1])
+        for i in range(len(forurls)):
+            fmt += "{}. ``{}``\n".format(str(i), forurls[i].split("/")[-1])
         self._savedel += [await self.bot.say(fmt)]
 
         index = 0
+        fails = 0
         while True:
             answer = await self.bot.wait_for_message(channel=ctx.channel, author=ctx.author)
             if answer.content[0].lower() in ['c', 'r']:
@@ -434,16 +435,29 @@ class Memes:
                 self._savedel = []
                 await asyncio.sleep(2)
                 for m in delNow:
-                    await self.bot.delete_message(m)
+                    try:
+                        await self.bot.delete_message(m)
+                    except:
+                        continue
                 return
             try:
-                index = int(answer.content) - 1
+                index = int(answer.content)
                 forurls[index]
                 await self.bot.delete_message(answer)
                 break
             except:
-                await self.bot.delete_message(answer)
-                self._savedel += [await self.bot.say("Must be number and in range!")]
+                fails += 1
+                if fails > 3:
+                    self._savedel += [await self.bot.say("Canceling...")]
+                    delNow = self._savedel[:]
+                    self._savedel = []
+                    await asyncio.sleep(5)
+                    for m in delNow:
+                        try:
+                            await self.bot.delete_message(m)
+                        except:
+                            continue
+                    return
 
         self._savedel += [
             await self.bot.say("Saving ``{}``\nWaiting for file name...".format(forurls[index].split("/")[-1]))]
@@ -451,26 +465,28 @@ class Memes:
         with aiohttp.ClientSession() as session:
             async with session.get(url=forurls[index]) as response:
                 self._lastimage = await response.read()
+
+        while True:
+            name = await self.bot.wait_for_message(channel=ctx.channel, author=ctx.author)
+            if name.content[:7].lower() == "saveas ":
+                if len(name.content.split()) > 1:
+                    with open(os.path.join(self._loc,
+                                           "{}.{}".format(name.content[7:].replace("'", "").lower(), self._lastextension)),
+                              "wb") as file:
+                        file.write(self._lastimage)
+                        self._lastimage = None
+                        await self.bot.delete_message(name)
+                        self._savedel += [await self.bot.say("Saved as ``{}``".format(file.name.split("/")[-1]))]
+                        delNow = self._savedel[:]
+                        self._savedel = []
+                        await asyncio.sleep(5)
+                        for m in delNow:
+                            try:
+                                await self.bot.delete_message(m)
+                            except:
+                                continue
+                    return
         return
-
-    @snagmeme.command(pass_context=True)
-    async def saveas(self, ctx: Context, *, name: str):
-        """
-        Used to save the image
-        """
-
-        with open(os.path.join(self._loc, "{}.{}".format(name.replace("'", "").lower(), self._lastextension)),
-                  "wb") as file:
-            file.write(self._lastimage)
-            self._lastimage = None
-            await self.bot.delete_message(ctx.message)
-            self._savedel += [await self.bot.say("Saved as ``{}``".format(file.name.split("/")[-1]))]
-            delNow = self._savedel[:]
-            self._savedel = []
-            await asyncio.sleep(5)
-            for m in delNow:
-                await self.bot.delete_message(m)
-            self._savedel = []
 
     @snagmeme.command(pass_context=True)
     async def reset(self, ctx: Context):
@@ -481,9 +497,11 @@ class Memes:
         self._savedel += [ctx.message]
         delNow = self._savedel[:]
         self._savedel = []
-        await asyncio.sleep(5)
         for m in delNow:
-            await self.bot.delete_message(m)
+            try:
+                await self.bot.delete_message(m)
+            except:
+                continue
 
 
 def setup(bot: Chiru):

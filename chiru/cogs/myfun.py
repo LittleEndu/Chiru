@@ -96,6 +96,23 @@ class MyFun(object):
             "Chiru: ``Here you go. Avatar url for {member.name}#{member.discriminator}: <{member.avatar_url}>``".format(
                 member=member))
 
+    @commands.command(pass_context=True)
+    async def justdeleteme(self, ctx: Context, count: int):
+        """
+        Deletes 'count' number of message you have sent in the channel
+
+        But only if they are in the first 1000 messages
+        """
+        count += 1
+        iterator = self.bot.logs_from(ctx.channel,limit=1000)
+        async for m in iterator:
+            if isinstance(m, discord.Message):
+                if (m.author == ctx.author):
+                    await self.bot.delete_message(m)
+                    count -= 1
+                    if count <= 0:
+                        return
+
 
 def setup(bot: Chiru):
     bot.add_cog(MyFun(bot))
