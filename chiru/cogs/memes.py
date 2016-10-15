@@ -8,6 +8,7 @@ import asyncio
 import json
 import discord
 import aiohttp
+import operator
 from random import randint
 from discord.ext import commands
 
@@ -317,6 +318,24 @@ class Memes:
             await self.bot.say("```" + bb + "```")
         else:
             await self.bot.say("Chiru: ``All memes are already clean``")
+
+    @commands.command(pass_context=True)
+    async def bigmemes(self, ctx: Context, count: int=10):
+        """
+        Return count biggest memes
+        """
+        files = dict()
+        for m in os.listdir(self._loc):
+            if not os.path.isfile(self._loc + m):
+                continue
+            files[str(m)] = os.stat(self._loc + m).st_size
+        bigfiles = sorted(files.items(), key=operator.itemgetter(1))
+        bigfiles.reverse()
+        fmt = ""
+        for i in bigfiles[:count]:
+            fmt += "``{} = {}``\n".format(str(i[0]), "%.2f" % (i[1]/1000000) +" MB")
+        await self.bot.say(fmt)
+
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def addmemeterm(self, ctx: Context, *, input: str):
