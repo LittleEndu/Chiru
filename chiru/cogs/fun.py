@@ -194,16 +194,25 @@ Mutual servers: {mut}```"""
         await self.bot.say(final_c)
 
     @commands.command(pass_context=True)
-    async def discrims(self, ctx: Context):
+    async def discrims(self, ctx: Context, count: int=5):
         """
         List how many discrims out of 10000 I can see.
         """
-        can_see = {int(x.discriminator) for x in self.bot.get_all_members()}
+        import operator
+        amount = {i: 0 for i in range(1, 10000)}
+        alreadyacountedfor = set()
+        can_see = set()
+
+        for x in self.bot.get_all_members():
+            can_see.add(int(x.discriminator))
+            if x.id not in alreadyacountedfor:
+                alreadyacountedfor.add(x.id)
+                amount[int(x.discriminator)] += 1
+
         base = 9999
         num_cant_see = 0
 
         missing = []
-
         for x in range(1, base + 1):
             if x not in can_see:
                 num_cant_see += 1
@@ -215,6 +224,14 @@ Mutual servers: {mut}```"""
         ))
         if missing:
             await self.bot.say("Almost at 10000! Missing: `{}`".format(", ".join(map(str, missing))))
+
+        amount = sorted(amount.items(), key=operator.itemgetter(1))
+        amount.reverse()
+        fmt = "Most popular discriminations:\n"
+
+        for a in amount[:min(count,20)]:
+            fmt += "``#{}`` with ``{}`` users\n".format(str(a[0]).rjust(4,"0"), str(a[1]))
+        await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
     async def serverinfo(self, ctx: Context):
