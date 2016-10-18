@@ -243,7 +243,7 @@ class Memes:
         loc = self._loc
         ll = len(os.listdir(loc))
         index = 0
-        step = ll//10
+        step = ll // 10
         next = step
         current = 0
         for m in os.listdir(loc):
@@ -251,7 +251,8 @@ class Memes:
             if index > next:
                 current += 1
                 next += step
-                await self.bot.edit_message(loading_bar,"Loading: ``{}{}``".format("\u2588"*current,"_"*(10-current)))
+                await self.bot.edit_message(loading_bar,
+                                            "Loading: ``{}{}``".format("\u2588" * current, "_" * (10 - current)))
             if not os.path.isfile(os.path.join(loc, m)):
                 continue
             for j in os.listdir(loc):
