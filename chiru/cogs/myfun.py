@@ -7,6 +7,7 @@ import re
 import aiohttp
 import discord
 import asyncio
+from random import randint
 from discord.ext import commands
 
 from bot import Chiru
@@ -104,7 +105,7 @@ class MyFun(object):
         But only if they are in the first 1000 messages
         """
         count += 1
-        iterator = self.bot.logs_from(ctx.channel,limit=1000)
+        iterator = self.bot.logs_from(ctx.channel, limit=1000)
         async for m in iterator:
             if isinstance(m, discord.Message):
                 if (m.author == ctx.author):
@@ -112,6 +113,35 @@ class MyFun(object):
                     count -= 1
                     if count <= 0:
                         return
+
+    @commands.command(pass_context=True)
+    async def loadingbar(self, ctx: Context, length: int = 10, message: str = "Loading", fail: bool = False,
+                         hide: bool = False, after: str = ""):
+        """
+        Displays a loading bar, actually doesn't load anything.
+        """
+        await self.bot.delete_message(ctx.message)
+        if hide:
+            title = ""
+        else:
+            title = "Attempting to "
+        loading_bar = await self.bot.say(
+            "{}{}: ``{}``".format(title if fail else "", message if fail else message,
+                                  "_" * length))
+        for i in range(length):
+            await self.bot.edit_message(loading_bar,
+                                        "{}{}: ``{}{}``".format(title if fail else "",
+                                                                message if fail else message, "\u2588" * i,
+                                                                "_" * (length - i)))
+            await asyncio.sleep(1)
+            if fail and i > length // 3 and randint(1, length // 3) == 1:
+                break
+        if not fail:
+            message = message[0].lower() + message[1:]
+        if hide:
+            message = " ".join([after] + message.split()[1:])
+        await self.bot.edit_message(loading_bar, "Failed to {}".format(message) if fail else "Done {}.".format(
+            message))
 
 
 def setup(bot: Chiru):

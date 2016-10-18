@@ -221,6 +221,9 @@ class Memes:
 
     @commands.command(pass_context=True)
     async def findmeme(self, ctx: Context, *, searchfor: str):
+        """
+        Kinda like listmeme but this is what meme command sees
+        """
         loc = self._loc
         bestmatch = self.getBestMatch(searchfor.replace("'", "").lower().split(), loc)
         fmt = ""
