@@ -115,35 +115,30 @@ class MyFun(object):
                         return
 
     @commands.command(pass_context=True)
-    async def loadingbar(self, ctx: Context, length: int = 10, message: str = "Loading", fail_at: int = 0,
-                         hide: bool = False, after: str = ""):
+    async def loadingbar(self, ctx: Context, length: int = 10, message: str = "Loading", after: str = "",
+                         fail_at: int = 0):
         """
         Displays a loading bar, actually doesn't load anything.
         """
-        fail = False
-        if fail_at!=0:
-            fail = True
         await self.bot.delete_message(ctx.message)
-        if hide:
-            title = ""
-        else:
-            title = "Attempting to "
-        loading_bar = await self.bot.say(
-            "{}{}: ``{}``".format(title if fail else "", message if fail else message,
-                                  "_" * length))
+        fail = False
+        if fail_at != 0:
+            fail = True
+        if after == "":
+            if fail:
+                after = "Failed in {}".format(message[0].lower() + message[1:])
+            else:
+                after = "Done {}".format(message[0].lower() + message[1:])
+
+        loading_bar = await self.bot.say("{}: ``{}``".format(message, "_" * length))
         for i in range(length):
             await self.bot.edit_message(loading_bar,
-                                        "{}{}: ``{}{}``".format(title if fail else "",
-                                                                message if fail else message, "\u2588" * i,
-                                                                "_" * (length - i)))
+                                        "{}: ``{}{}``".format(message, "\u2588" * i, "_" * (length - i)))
             await asyncio.sleep(1)
+            if fail and i > fail_at:
                 break
-        if not fail:
-            message = message[0].lower() + message[1:]
-        if hide:
-            message = " ".join([after] + message.split()[1:])
-        await self.bot.edit_message(loading_bar, "Failed to {}".format(message) if fail else "Done {}.".format(
-            message))
+
+        await self.bot.edit_message(loading_bar, after)
 
 
 def setup(bot: Chiru):
