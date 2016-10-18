@@ -32,11 +32,11 @@ class Memes:
         self._lastimage = None
         self._lastextension = ""
         self._loc = self.bot.config.get("memelocation", "")
-        if not os.path.isdir(self._loc + "ignore"):
-            os.makedirs(self._loc + "ignore")
+        if not os.path.isdir(os.path.join(self._loc, "ignore")):
+            os.makedirs(os.path.join(self._loc, "ignore"))
         self._blacklist = dict()
-        if os.path.isfile(self._loc + "ignore/memes.json"):
-            with open(self._loc + "ignore/memes.json", encoding="UTF-8") as file:
+        if os.path.isfile(os.path.join(self._loc, "ignore/memes.json")):
+            with open(os.path.join(self._loc, "ignore/memes.json"), encoding="UTF-8") as file:
                 self._blacklist = json.load(file)
 
     @commands.command(pass_context=True, invoke_without_command=True)
@@ -72,13 +72,11 @@ class Memes:
             if self._members == set():
                 await self.bot.say("Chiru: ``There's nobody set to be mentioned``")
             else:
-                fmt = ""
-                for m in self._members:
-                    fmt += str(m.name) + ", "
+                fmt = ", ".join(self._members)
                 if len(self._members) == 1:
-                    await self.bot.say("Chiru: ``" + fmt[:-2] + " is set to be mentioned``")
+                    await self.bot.say("Chiru: ``{} is set to be mentioned``".format(fmt))
                 else:
-                    await self.bot.say("Chiru: ``" + fmt[:-2] + " are set to be mentioned``")
+                    await self.bot.say("Chiru: ``{} are set to be mentioned``".format(fmt))
 
     @commands.command(pass_context=True)
     async def clearmention(self, ctx: Context):
@@ -106,28 +104,28 @@ class Memes:
         self._message = ""
         await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
-    def getBestMatch(self, searchfor, loc):
-        matches = {x: 0 for x in os.listdir(loc) if os.path.isfile(os.path.join(loc, x))}
+    def getBestMatch(self, searchfor, loc, extra=1):
+        matches = {x: 0.0 for x in os.listdir(loc) if os.path.isfile(os.path.join(loc, x))}
         for j in searchfor:
-            if all(not re.match(".*(" + re.escape(j) + ").*", i.lower()) for i in os.listdir(loc)):
+            if all(not re.match(".*({}).*".format(re.escape(j)), i.lower()) for i in os.listdir(loc)):
                 searchfor.remove(j)
         rq = len(searchfor) // 2
         for i in os.listdir(loc):
             if not os.path.isfile(os.path.join(loc, i)):
                 continue
             for j in searchfor:
-                if re.match(".*" + re.escape(j) + ".*", i.lower()):
-                    matches[i] += 1
-        bestmatch = []
+                if re.match(".*{}.*".format(re.escape(j)), i.lower()):
+                    matches[i] += 1 + (1 / (len(i.split()) + 1)) * extra
+        best_match = []
         for m in matches:
             if matches[m] > rq:
-                if bestmatch == []:
-                    bestmatch = [m]
-                elif matches[m] > matches[bestmatch[0]]:
-                    bestmatch = [m]
-                elif matches[m] == matches[bestmatch[0]]:
-                    bestmatch += [m]
-        return bestmatch
+                if best_match == []:
+                    best_match = [m]
+                elif matches[m] > matches[best_match[0]]:
+                    best_match = [m]
+                elif matches[m] == matches[best_match[0]]:
+                    best_match += [m]
+        return best_match
 
     @commands.command(pass_context=True)
     async def meme(self, ctx: Context, *, searchfor: str = ""):
@@ -163,12 +161,10 @@ class Memes:
 
         if len(bestmatch) > 0:
             self._lastlisted = []
-            fmt = ""
-            for m in self._members:
-                fmt += str(m.mention) + " "
+            fmt = " ".join([m.mention for m in self._members])
             try:
                 await self.bot.send_file(ctx.channel, loc + bestmatch[randint(0, len(bestmatch) - 1)],
-                                         content=fmt + " " + self._message)
+                                         content="{} {}".format(fmt, self._message))
                 self._members = set()
                 self._message = ""
                 await self.bot.delete_message(ctx.message)
@@ -196,26 +192,26 @@ class Memes:
             ss = searchfor
             fmt = ""
             searchfor = searchfor.replace("'", "").lower().split()
-            bestmatch = self.getBestMatch(searchfor, loc)
+            bestmatch = self.getBestMatch(searchfor, loc, extra=0)
             index = 0
             if len(bestmatch) > 0:
                 self._lastlisted = bestmatch
                 for m in bestmatch:
-                    fmt += "``" + str(index + 1) + ". " + m + "``\t\t"
+                    fmt += "``{}. {}``\t\t".format(str(index + 1), m)
                     index += 1
                     if index % 20 == 0:
                         await self.bot.say(fmt)
                         fmt = ""
                 await self.bot.say(fmt)
             else:
-                await self.bot.say("Chiru: ``Didn't find any memes for " + ss + "``")
+                await self.bot.say("Chiru: ``Didn't find any memes for {}``".format(ss))
         else:
             ##They didn't search anything so we are good to list them all
             index = 0
             fmt = ""
             ss = searchfor
             for i in os.listdir(loc):
-                fmt = fmt + "``" + str(index + 1) + ". " + i + "``\t\t"
+                fmt += "``{}. {}``\t\t".format(str(index + 1), i)
                 index += 1
                 if index % 20 == 0:
                     await self.bot.say(fmt)
@@ -224,13 +220,38 @@ class Memes:
             await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
+    async def findmeme(self, ctx: Context, *, searchfor: str):
+        loc = self._loc
+        bestmatch = self.getBestMatch(searchfor.replace("'", "").lower().split(), loc)
+        fmt = ""
+        index = 0
+        for m in bestmatch:
+            fmt += "``{}``\t\t".format(m)
+            index += 1
+            if index % 20 == 0:
+                await self.bot.say(fmt)
+                fmt = ""
+        await self.bot.say(fmt)
+
+    @commands.command(pass_context=True)
     async def checkmemes(self, ctx: Context):
         """
         Checks if every meme can be used.
         """
+        loading_bar = await self.bot.say("Loading: ``__________``")
         cantfind = []
         loc = self._loc
+        ll = len(os.listdir(loc))
+        index = 0
+        step = ll//10
+        next = step
+        current = 0
         for m in os.listdir(loc):
+            index += 1
+            if index > next:
+                current += 1
+                next += step
+                await self.bot.edit_message(loading_bar,"Loading: ``{}{}``".format("\u2588"*current,"_"*(10-current)))
             if not os.path.isfile(os.path.join(loc, m)):
                 continue
             for j in os.listdir(loc):
@@ -238,21 +259,22 @@ class Memes:
                     continue
                 if m == j:
                     continue
-                if all(re.match(".*(" + n.lower() + ").*", j.lower()) for n in m.replace(".", " ").split()):
+                if all(re.match(".*({}).*".format(n.lower()), j.lower()) for n in m.replace(".", " ").split()):
                     cantfind += [m]
                     break
+        await self.bot.delete_message(loading_bar)
         if len(cantfind) > 0:
             fmt = "```These memes can't be found:\n"
             if len(cantfind) == 1:
                 fmt = "``This meme can't be found: "
             for i in cantfind:
-                fmt += i + "\n"
+                fmt += "{}\n".format(i)
             fmt += "``"
             if len(fmt.split("\n")) > 2:
                 fmt += "`"
-            await self.bot.say(fmt)
+            await self.bot.say(fmt[:1500])
         else:
-            await self.bot.say("Chiru: ``All memes have uniqe enough filenames.``")
+            await self.bot.say("Chiru: ``All memes have unique enough filenames.``")
         toobig = []
         for m in os.listdir(loc):
             if os.stat(loc + m).st_size > 8000000:
@@ -262,7 +284,7 @@ class Memes:
             if len(toobig) == 1:
                 fmt = "``This meme is too big: "
             for i in toobig:
-                fmt += i + "\n"
+                fmt += "{}\n".format(i)
             fmt += "``"
             if len(fmt.split("\n")) > 2:
                 fmt += "`"
@@ -283,7 +305,7 @@ class Memes:
             words.remove(ext)
             ext = ext.split(".")
             words.append(ext[0])
-            ext = "." + ext[-1]
+            ext = ".{}".format(ext[-1])
             words.reverse()
             finalwords = words[:]  # bugfix: will now remove more than one word. It didn't before for some reason
             for w1 in words:
@@ -293,13 +315,13 @@ class Memes:
                         if oneskip:
                             oneskip = False
                             continue
-                    if re.match(".*(" + re.escape(w1) + ").*", w2):
+                    if re.match(".*({}).*".format(re.escape(w1)), w2):
                         finalwords.remove(w1)
                         break
             name = ""
             finalwords.reverse()
             for w in finalwords:
-                name += w.replace("'", "").lower() + " "
+                name += "{} ".format(w.replace("'", "").lower())
             name = name.strip() + ext.replace("'", "").lower()
             if i != name:
                 os.rename(loc + i, loc + name)
@@ -309,18 +331,18 @@ class Memes:
             index = 0
             await self.bot.say("Chiru: ``Here are the memes I renamed``\n")
             for i in fmt.split("\n"):
-                bb += i + "\n"
+                bb += "{}\n".format(i)
                 index += 1
                 if index % 10 == 0:
-                    await self.bot.say("```" + bb + "```")
+                    await self.bot.say("```{}```".format(bb))
                     bb = ""
                     await asyncio.sleep(0.1)
-            await self.bot.say("```" + bb + "```")
+            await self.bot.say("```{}```".format(bb))
         else:
             await self.bot.say("Chiru: ``All memes are already clean``")
 
     @commands.command(pass_context=True)
-    async def bigmemes(self, ctx: Context, count: int=10):
+    async def bigmemes(self, ctx: Context, count: int = 10):
         """
         Return count biggest memes
         """
@@ -331,11 +353,9 @@ class Memes:
             files[str(m)] = os.stat(self._loc + m).st_size
         bigfiles = sorted(files.items(), key=operator.itemgetter(1))
         bigfiles.reverse()
-        fmt = ""
-        for i in bigfiles[:count]:
-            fmt += "``{} = {}``\n".format(str(i[0]), "%.2f" % (i[1]/1000000) +" MB")
+        fmt = "\n".join(
+            ["``{} = {}``".format(str(i[0]), "{} MB".format("%.2f" % (i[1] / 1000000))) for i in bigfiles[:count]])
         await self.bot.say(fmt)
-
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def addmemeterm(self, ctx: Context, *, input: str):
@@ -348,21 +368,22 @@ class Memes:
             await self.bot.say("Chiru: ``You need to atleast one word to search for``")
             return
         if input.split()[1] != "to":
-            await self.bot.say('Chiru: ``Second word needs to be "to" as in "addmemeterm something to something else"')
+            await self.bot.say('Chiru: ``Second word needs to be "to" as in "addmemeterm this to something else"``')
+            return
         toAdd = input.replace("'", "").lower().split()[0]
         toSearch = input.replace("'", "").lower().split()[2:]
         loc = self._loc
         bestmatch = self.getBestMatch(toSearch, loc)
         self._undobutton = {}
         for b in bestmatch:
-            self._undobutton[loc + b] = loc + toAdd + " " + b
-            os.rename(loc + b, loc + toAdd + " " + b)
+            self._undobutton[loc + b] = "{}{} {}".format(loc, toAdd, b)
+            os.rename(loc + b, "{}{} {}".format(loc, toAdd, b))
         fmt = ""
         index = 0
         if len(bestmatch) > 0:
             await self.bot.say("Chiru: ``Here are the new memes``")
             for m in bestmatch:
-                fmt += "``" + str(index + 1) + ". " + toAdd + " " + m + "``\t\t"
+                fmt += "``{}. {} {}``\t\t".format(str(index + 1), toAdd, m)
                 index += 1
                 if index % 20 == 0:
                     await self.bot.say(fmt)
@@ -370,7 +391,7 @@ class Memes:
             await self.bot.say(fmt)
         else:
             await self.bot.say(
-                "Chiru: ``Didn't find any memes for " + str(input.replace("'", "").lower().split()[2:]) + "``")
+                "Chiru: ``Didn't find any memes for {}``".format(str(input.replace("'", "").lower().split()[2:])))
 
     @addmemeterm.command(pass_context=True)
     async def undo(self, ctx: Context):
@@ -394,7 +415,7 @@ class Memes:
             self._blacklist[ctx.server.id] = [ctx.channel.id]
         else:
             self._blacklist[ctx.server.id].append(ctx.channel.id)
-        with open(self._loc + "ignore/memes.json", "w+", encoding="UTF-8") as file:
+        with open(os.path.join(self._loc, "ignore/memes.json"), "w+", encoding="UTF-8") as file:
             json.dump(self._blacklist, file)
         await self.bot.delete_message(ctx.message)
 
@@ -406,7 +427,7 @@ class Memes:
         if ctx.server.id in self._blacklist:
             if ctx.channel.id in self._blacklist[ctx.server.id]:
                 self._blacklist[ctx.server.id].remove(ctx.channel.id)
-        with open(self._loc + "ignore/memes.json", "w+", encoding="UTF-8") as file:
+        with open(os.path.join(self._loc, "ignore/memes.json"), "w+", encoding="UTF-8") as file:
             json.dump(self._blacklist, file)
         await self.bot.delete_message(ctx.message)
 
@@ -440,8 +461,7 @@ class Memes:
         fmt = "Choose what image:\n"
         forurls = urls[:10]
         forurls.reverse()
-        for i in range(len(forurls)):
-            fmt += "{}. ``{}``\n".format(str(i), forurls[i].split("/")[-1])
+        fmt += "".join(["{}. ``{}``".format(str(i), forurls[i].split("/")[-1]) for i in range(len(forurls))])
         self._savedel += [await self.bot.say(fmt)]
 
         index = 0
@@ -490,7 +510,8 @@ class Memes:
             if name.content[:7].lower() == "saveas ":
                 if len(name.content.split()) > 1:
                     with open(os.path.join(self._loc,
-                                           "{}.{}".format(name.content[7:].replace("'", "").lower(), self._lastextension)),
+                                           "{}.{}".format(name.content[7:].replace("'", "").lower(),
+                                                          self._lastextension)),
                               "wb") as file:
                         file.write(self._lastimage)
                         self._lastimage = None
