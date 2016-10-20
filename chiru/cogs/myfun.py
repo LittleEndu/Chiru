@@ -120,7 +120,7 @@ class MyFun(object):
         """
         Displays a loading bar, actually doesn't load anything.
         """
-        await self.bot.delete_message(ctx.message)
+        loading_bar = ctx.message
         fail = False
         if fail_at != 0:
             fail = True
@@ -130,7 +130,7 @@ class MyFun(object):
             else:
                 after = "Done {}".format(message[0].lower() + message[1:])
 
-        loading_bar = await self.bot.say("{}: ``{}``".format(message, "_" * length))
+        await self.bot.edit_message(loading_bar, "{}: ``{}``".format(message, "_" * length))
         for i in range(length):
             await self.bot.edit_message(loading_bar,
                                         "{}: ``{}{}``".format(message, "\u2588" * i, "_" * (length - i)))

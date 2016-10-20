@@ -127,6 +127,22 @@ class Memes:
                     best_match += [m]
         return best_match
 
+    def normalize(self, string: str):
+        return string.replace("'", "").replace("fuck", "fck").lower()
+
+    def get_random_problem(self):
+        mylist = ['*','/','+','-']
+        problem = ""
+        answer = 0
+        while True:
+            try:
+                problem = "{}{}{}{}{}".format(randint(1,9),mylist[randint(2,3)],randint(1,9),mylist[randint(0,3)],randint(1,9))
+                answer = int(eval(problem))
+                break
+            except ZeroDivisionError:
+                continue
+        return problem, answer
+
     @commands.command(pass_context=True)
     async def meme(self, ctx: Context, *, searchfor: str = ""):
         """
@@ -136,9 +152,10 @@ class Memes:
         """
         if ctx.server.id in self._blacklist:
             if ctx.channel.id in self._blacklist[ctx.server.id]:
-                toDel = await self.bot.say("Chiru: ``No memes in here please.``")
+                problem, answer = self.get_random_problem()
+                toDel = await self.bot.say("Chiru: ``Solve this problem to continue: {}``".format(problem))
                 msg = await self.bot.wait_for_message(timeout=10, author=ctx.author, channel=ctx.channel,
-                                                      content="meme anyway")
+                                                      content="meme anyway {}".format(str(answer)))
                 await self.bot.delete_message(toDel)
                 if msg == None:
                     await self.bot.delete_message(ctx.message)
@@ -148,7 +165,7 @@ class Memes:
 
         loc = self._loc
         if searchfor != "":
-            searchfor = searchfor.replace("'", "").lower().split()
+            searchfor = self.normalize(searchfor).split()
             bestmatch = self.getBestMatch(searchfor, loc)
         elif len(self._lastlisted) > 0:
             bestmatch = self._lastlisted
@@ -191,7 +208,7 @@ class Memes:
             ##They serched for something so we'll use dictonary
             ss = searchfor
             fmt = ""
-            searchfor = searchfor.replace("'", "").lower().split()
+            searchfor = self.normalize(searchfor).split()
             bestmatch = self.getBestMatch(searchfor, loc, extra=0)
             index = 0
             if len(bestmatch) > 0:
@@ -225,7 +242,7 @@ class Memes:
         Kinda like listmeme but this is what meme command sees
         """
         loc = self._loc
-        bestmatch = self.getBestMatch(searchfor.replace("'", "").lower().split(), loc)
+        bestmatch = self.getBestMatch(self.normalize(searchfor).split(), loc)
         fmt = ""
         index = 0
         for m in bestmatch:
@@ -304,7 +321,7 @@ class Memes:
         for i in os.listdir(loc):
             if not os.path.isfile(os.path.join(loc, i)):
                 continue
-            words = i.lower().split()
+            words = self.normalize(i).split()
             ext = words[-1]
             words.remove(ext)
             ext = ext.split(".")
@@ -322,11 +339,8 @@ class Memes:
                     if re.match(".*({}).*".format(re.escape(w1)), w2):
                         finalwords.remove(w1)
                         break
-            name = ""
             finalwords.reverse()
-            for w in finalwords:
-                name += "{} ".format(w.replace("'", "").lower())
-            name = name.strip() + ext.replace("'", "").lower()
+            name = " ".join([self.normalize(w) for w in finalwords]) + self.normalize(ext)
             if i != name:
                 os.rename(loc + i, loc + name)
                 fmt += '"' + i + '" --> "' + name + '"\n'
@@ -335,13 +349,14 @@ class Memes:
             index = 0
             await self.bot.say("Chiru: ``Here are the memes I renamed``\n")
             for i in fmt.split("\n"):
-                bb += "{}\n".format(i)
+                bb += "``{}``\n".format(i)
                 index += 1
                 if index % 10 == 0:
-                    await self.bot.say("```{}```".format(bb))
+                    await self.bot.say(bb)
                     bb = ""
-                    await asyncio.sleep(0.1)
-            await self.bot.say("```{}```".format(bb))
+                    await asyncio.sleep(0.5)
+            if bb != "":
+                await self.bot.say(bb)
         else:
             await self.bot.say("Chiru: ``All memes are already clean``")
 
@@ -362,22 +377,22 @@ class Memes:
         await self.bot.say(fmt)
 
     @commands.group(pass_context=True, invoke_without_command=True)
-    async def addmemeterm(self, ctx: Context, *, input: str):
+    async def addmemeterm(self, ctx: Context, *, string_in: str):
         """
         Will add words to filenames
 
         Adds first word in input to every meme that matches the other words
         """
-        if len(input.split()) < 2:
+        if len(string_in.split()) < 2:
             await self.bot.say("Chiru: ``You need to atleast one word to search for``")
             return
-        if input.split()[1] != "to":
+        if string_in.split()[1] != "to":
             await self.bot.say('Chiru: ``Second word needs to be "to" as in "addmemeterm this to something else"``')
             return
-        toAdd = input.replace("'", "").lower().split()[0]
-        toSearch = input.replace("'", "").lower().split()[2:]
+        toAdd = self.normalize(string_in).split()[0]
+        toSearch = self.normalize(string_in).split()[2:]
         loc = self._loc
-        bestmatch = self.getBestMatch(toSearch, loc)
+        bestmatch = self.getBestMatch(toSearch, loc, extra=0)
         self._undobutton = {}
         for b in bestmatch:
             self._undobutton[loc + b] = "{}{} {}".format(loc, toAdd, b)
@@ -395,7 +410,7 @@ class Memes:
             await self.bot.say(fmt)
         else:
             await self.bot.say(
-                "Chiru: ``Didn't find any memes for {}``".format(str(input.replace("'", "").lower().split()[2:])))
+                "Chiru: ``Didn't find any memes for {}``".format("".join(self.normalize(string_in).split()[2:])))
 
     @addmemeterm.command(pass_context=True)
     async def undo(self, ctx: Context):
@@ -465,7 +480,7 @@ class Memes:
         fmt = "Choose what image:\n"
         forurls = urls[:10]
         forurls.reverse()
-        fmt += "".join(["{}. ``{}``".format(str(i), forurls[i].split("/")[-1]) for i in range(len(forurls))])
+        fmt += "".join(["{}. ``{}``\n".format(str(i), forurls[i].split("/")[-1]) for i in range(len(forurls))])
         self._savedel += [await self.bot.say(fmt)]
 
         index = 0
@@ -514,7 +529,7 @@ class Memes:
             if name.content[:7].lower() == "saveas ":
                 if len(name.content.split()) > 1:
                     with open(os.path.join(self._loc,
-                                           "{}.{}".format(name.content[7:].replace("'", "").lower(),
+                                           "{}.{}".format(self.normalize(name.content[7:]),
                                                           self._lastextension)),
                               "wb") as file:
                         file.write(self._lastimage)

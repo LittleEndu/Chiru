@@ -31,10 +31,11 @@ class Mal:
         Returns link of the first anime.
         """
         results = spice.search(searchfor, spice.get_medium("anime"), self.creds)
-
-        await self.bot.say("{}{}/{}".format(cc.ANIME_SCRAPE_BASE, str(results[0].id),
+        if len(results)>0:
+            await self.bot.say("{}{}/{}".format(cc.ANIME_SCRAPE_BASE, str(results[0].id),
                                             quote(results[0].title.replace(" ", "_"), safe="")))
-
+        else:
+            await self.bot.say("Didn't fine any anime for '{}'".format(searchfor))
 
 def setup(bot: Chiru):
     bot.add_cog(Mal(bot))
