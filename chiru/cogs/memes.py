@@ -154,14 +154,18 @@ class Memes:
             if ctx.channel.id in self._blacklist[ctx.server.id]:
                 problem, answer = self.get_random_problem()
                 toDel = await self.bot.say("Chiru: ``Solve this problem to continue: {}``".format(problem))
-                msg = await self.bot.wait_for_message(timeout=10, author=ctx.author, channel=ctx.channel,
-                                                      content="meme anyway {}".format(str(answer)))
+                msg = await self.bot.wait_for_message(author=ctx.author, channel=ctx.channel)
                 await self.bot.delete_message(toDel)
-                if msg == None:
+                if msg is not None and msg.content=="{}".format(str(answer)):
+                    await self.bot.delete_message(msg)
+                else:
+                    await self.bot.say("Chiru: ``Wrong!!! {}={}``".format(problem,str(answer)))
+                    await self.bot.delete_message(msg)
+                    await self.bot.delete_message(toDel)
                     await self.bot.delete_message(ctx.message)
                     return
-                else:
-                    await self.bot.delete_message(msg)
+
+
 
         loc = self._loc
         if searchfor != "":
