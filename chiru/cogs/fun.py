@@ -227,7 +227,7 @@ Mutual servers: {mut}```"""
 
         amount = sorted(amount.items(), key=operator.itemgetter(1))
         amount.reverse()
-
+        
         fmt = "Most popular discriminators:\n"
         for a in amount[:min(count, 20)]:
             fmt += "``#{}`` with ``{}`` users\n".format(str(a[0]).rjust(4, "0"), str(a[1]))
