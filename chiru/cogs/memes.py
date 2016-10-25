@@ -283,7 +283,10 @@ class Memes:
                     continue
                 if m == j:
                     continue
-                if all(re.match(".*({}).*".format(n.lower()), j.lower()) for n in m.replace(".", " ").split()):
+                str_ext = m.split(".")
+                str_temp = m[:-len(str_ext[-1])-1]
+                str_m = str_temp.split() + [str_ext[-1]]
+                if all(re.match(".*({}).*".format(re.escape(n.lower())), j.lower()) for n in str_m):
                     cantfind += [m]
                     break
         await self.bot.delete_message(loading_bar)
@@ -351,7 +354,7 @@ class Memes:
             bb = ""
             index = 0
             await self.bot.say("Chiru: ``Here are the memes I renamed``\n")
-            for i in fmt.split("\n"):
+            for i in fmt.split("\n")[:-1]:
                 bb += "``{}``\n".format(i)
                 index += 1
                 if index % 10 == 0:
