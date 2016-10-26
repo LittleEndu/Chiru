@@ -327,14 +327,14 @@ class Memes:
         for i in os.listdir(loc):
             if not os.path.isfile(os.path.join(loc, i)):
                 continue
-            words = self.normalize(i).split()
-            ext = words[-1]
-            words.remove(ext)
-            ext = ext.split(".")
-            words.append(ext[0])
-            ext = ".{}".format(ext[-1])
+            words = self.normalize(i)
+            ext = words.split(".")[-1]
+            words = words[:-len(ext)-1].split()
+            words.append(ext)
+            ext = ".{}".format(ext)
             words.reverse()
             finalwords = words[:]  # bugfix: will now remove more than one word. It didn't before for some reason
+            self.bot.logger.info("Going into for loop with {} and {}".format(i, str(words)))
             for w1 in words:
                 oneskip = True
                 for w2 in finalwords:  # bugfix: will now remove only one duplicate
@@ -346,6 +346,8 @@ class Memes:
                         finalwords.remove(w1)
                         break
             finalwords.reverse()
+            if ext[1:] in finalwords:
+                finalwords.remove(ext[1:])
             name = " ".join([self.normalize(w) for w in finalwords]) + self.normalize(ext)
             if i != name:
                 os.rename(loc + i, loc + name)
