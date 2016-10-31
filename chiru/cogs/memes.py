@@ -32,12 +32,6 @@ class Memes:
         self._lastimage = None
         self._lastextension = ""
         self._loc = self.bot.config.get("memelocation", "")
-        if not os.path.isdir(os.path.join(self._loc, "ignore")):
-            os.makedirs(os.path.join(self._loc, "ignore"))
-        self._blacklist = dict()
-        if os.path.isfile(os.path.join(self._loc, "ignore/memes.json")):
-            with open(os.path.join(self._loc, "ignore/memes.json"), encoding="UTF-8") as file:
-                self._blacklist = json.load(file)
 
     @commands.command(pass_context=True, invoke_without_command=True)
     async def mememention(self, ctx: Context, *, member: str = ""):
@@ -150,22 +144,6 @@ class Memes:
 
         Will send image that matches most search terms but only if over half are matched
         """
-        if ctx.server.id in self._blacklist:
-            if ctx.channel.id in self._blacklist[ctx.server.id]:
-                problem, answer = self.get_random_problem()
-                toDel = await self.bot.say("Chiru: ``Solve this problem to continue: {}``".format(problem))
-                msg = await self.bot.wait_for_message(author=ctx.author, channel=ctx.channel)
-                await self.bot.delete_message(toDel)
-                if msg is not None and re.search("[^-1234567890]({})\\D".format(answer)," {} ".format(msg.content)):
-                    await self.bot.delete_message(msg)
-                else:
-                    await self.bot.say("Chiru: ``Wrong!!! {}={}``".format(problem,str(answer)))
-                    await self.bot.delete_message(msg)
-                    await self.bot.delete_message(ctx.message)
-                    return
-
-
-
         loc = self._loc
         if searchfor != "":
             searchfor = self.normalize(searchfor).split()
@@ -432,31 +410,6 @@ class Memes:
             os.rename(self._undobutton[i], i)
         self._undobutton = {}
         await self.bot.say("Chiru: :ok_hand:")
-
-    @commands.command(pass_context=True)
-    async def banmemes(self, ctx: Context):
-        """
-        Will ban memes in the channel it's said in
-        """
-        if not ctx.server.id in self._blacklist:
-            self._blacklist[ctx.server.id] = [ctx.channel.id]
-        else:
-            self._blacklist[ctx.server.id].append(ctx.channel.id)
-        with open(os.path.join(self._loc, "ignore/memes.json"), "w+", encoding="UTF-8") as file:
-            json.dump(self._blacklist, file)
-        await self.bot.delete_message(ctx.message)
-
-    @commands.command(pass_context=True)
-    async def allowmemes(self, ctx: Context):
-        """
-        Will allow memes in the channel it's said in
-        """
-        if ctx.server.id in self._blacklist:
-            if ctx.channel.id in self._blacklist[ctx.server.id]:
-                self._blacklist[ctx.server.id].remove(ctx.channel.id)
-        with open(os.path.join(self._loc, "ignore/memes.json"), "w+", encoding="UTF-8") as file:
-            json.dump(self._blacklist, file)
-        await self.bot.delete_message(ctx.message)
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def snagmeme(self, ctx: Context, channel=None):
