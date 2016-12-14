@@ -7,6 +7,7 @@ import random
 import datetime
 
 import aiohttp
+import asyncio
 import discord
 import time
 from discord.ext import commands
@@ -19,7 +20,7 @@ AUTHORIZATION_URL = "https://discordapp.com/api/v6/oauth2/authorize"
 
 
 def fuyu_check(ctx: Context):
-    return ctx.server.id == "198101180180594688"
+    return ctx.server.id in ["198101180180594688", "169602212769562626"]
 
 
 class Fuyu:
@@ -34,15 +35,49 @@ class Fuyu:
         if member.server.id != "198101180180594688":
             return
 
-        if member.bot:
-            role = discord.utils.get(member.server.roles, name="Bots")
-            await self.bot.add_roles(member, role)
-
         # Auto-nickname them.
         dt = datetime.datetime.now()
         if dt.month == 10:
             nickname = "spooky {}".format(member.name)
             await self.bot.change_nickname(member, nickname)
+        elif dt.month in [11, 12]:
+            nickname = "festive {}".format(member.name)
+            await self.bot.change_nickname(member, nickname)
+
+    async def on_message(self, message: discord.Message):
+        if not isinstance(message.author, discord.Member):
+            return
+
+        if message.author.server.id != "198101180180594688":
+            return
+
+        if message.author.id == message.server.me.id:
+            return
+
+        if "triggered" in message.content:
+            await self.bot.send_message(message.channel, "haha triggered xd")
+
+    @commands.command(pass_context=True)
+    @commands.check(fuyu_check)
+    @commands.has_permissions(manage_server=True)
+    async def massnick(self, ctx: Context, prefix: str, suffix: str=""):
+        """
+        Mass nicknames a server with the specified prefix.
+        """
+        coros = []
+
+        for member in ctx.server.members:
+            coros.append(self.bot.change_nickname(member, "{}{}{}".format(prefix, member.name, suffix)))
+
+        fut = asyncio.gather(*coros, return_exceptions=True)
+
+        while not fut.done():
+            await self.bot.type()
+            await asyncio.sleep(5)
+
+        count = sum(1 for i in fut.result() if not isinstance(i, Exception))
+
+        await self.bot.say("Changed `{}` nicks.".format(count))
 
     @commands.command(pass_context=True)
     @commands.check(fuyu_check)
