@@ -35,7 +35,7 @@ class Mal:
             await self.bot.say("{}{}/{}".format(cc.ANIME_SCRAPE_BASE, str(results[0].id),
                                             quote(results[0].title.replace(" ", "_"), safe="")))
         else:
-            await self.bot.say("Didn't fine any anime for '{}'".format(searchfor))
+            await self.bot.say("Didn't find any anime for '{}'".format(searchfor))
 
 def setup(bot: Chiru):
     bot.add_cog(Mal(bot))
