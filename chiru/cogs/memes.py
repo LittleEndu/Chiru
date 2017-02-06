@@ -9,6 +9,7 @@ import json
 import discord
 import aiohttp
 import operator
+import json
 from random import randint
 from discord.ext import commands
 
@@ -32,6 +33,44 @@ class Memes:
         self._lastimage = None
         self._lastextension = ""
         self._loc = self.bot.config.get("memelocation", "")
+        self._overwrite = {}
+        try:
+            with open(self._loc+"ignore/overwrite.json",encoding="UTF-8") as filein:
+                self._overwrite = json.load(filein)
+        except:
+            pass
+
+    @commands.command(pass_context=True, invoke_without_command=True)
+    async def addoverwritememe(self, ctx: Context, *, searchfor: str):
+        """
+        Adds a search overwrite for a listed meme
+        """
+        toDel = []
+        searchfor = self.normalize(searchfor).split()
+        bestmatch = self.getBestMatch(searchfor, self._loc)
+        meme = bestmatch[0]
+        toDel += [await self.bot.say("With what do you want ``{}`` to be overwritten in search?".format(meme))]
+        overwrite = await self.bot.wait_for_message(channel=ctx.channel, author=ctx.author)
+        toDel += [overwrite]
+        if overwrite.content[0].lower() in ['c', 'r'] and len(overwrite.content)==1:
+            await self.bot.say("Oki, canceling.")
+            await asyncio.sleep(5)
+            for m in toDel:
+                try:
+                    await self.bot.delete_message(m)
+                except:
+                    continue
+            return
+        self._overwrite[overwrite.content] = meme
+        with open(self._loc + "ignore/overwrite.json", "w", encoding="UTF-8") as fileout:
+            json.dump(self._overwrite, fileout)
+        toDel += [await self.bot.say("Successfully added the overwrite.")]
+        await asyncio.sleep(5)
+        for m in toDel:
+            try:
+                await self.bot.delete_message(m)
+            except:
+                continue
 
     @commands.command(pass_context=True, invoke_without_command=True)
     async def mememention(self, ctx: Context, *, member: str = ""):
@@ -44,7 +83,7 @@ class Memes:
                 tempmember = ctx.server.get_member(member)
             except:
                 tempmember = ctx.server.get_member_named(member)
-            if tempmember != None:
+            if tempmember is not None:
                 await self.bot.delete_message(ctx.message)
                 self._members.add(tempmember)
                 mytimer = 60
@@ -56,6 +95,26 @@ class Memes:
                         mytimer -= 1
                 if tempmember in self._members:
                     self._members.remove(tempmember)
+            elif len(ctx.message.mentions)>0:
+                members = ctx.message.mentions
+                await self.bot.delete_message(ctx.message)
+                for m in members:
+                    if isinstance(m,discord.Member):
+                        self._members.add(m)
+                mytimer = 60
+                self._mentiontimer += 60
+                while self._mentiontimer > 0 and mytimer > 0:
+                    await asyncio.sleep(1)
+                    if mytimer > 0:
+                        self._mentiontimer -= 1
+                        mytimer -= 1
+                for m in members:
+                    try:
+                        self._members.remove(m)
+                    except:
+                        continue
+                ctx.author.mention
+
             else:
                 toDel = await self.bot.say("Chiru: ``Can't find such member``")
                 await asyncio.sleep(5)
@@ -66,7 +125,7 @@ class Memes:
             if self._members == set():
                 await self.bot.say("Chiru: ``There's nobody set to be mentioned``")
             else:
-                fmt = ", ".join(self._members)
+                fmt = ", ".join([i.name for i in self._members])
                 if len(self._members) == 1:
                     await self.bot.say("Chiru: ``{} is set to be mentioned``".format(fmt))
                 else:
@@ -98,7 +157,10 @@ class Memes:
         self._message = ""
         await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
 
-    def getBestMatch(self, searchfor, loc, extra=1):
+    def getBestMatch(self, searchfor, loc, extra=1, overwrite=""):
+        if overwrite in self._overwrite:
+            best_match = [self._overwrite[overwrite]]
+            return best_match
         matches = {x: 0.0 for x in os.listdir(loc) if os.path.isfile(os.path.join(loc, x))}
         for j in searchfor:
             if all(not re.match(".*({}).*".format(re.escape(j)), i.lower()) for i in os.listdir(loc)):
@@ -146,8 +208,7 @@ class Memes:
         """
         loc = self._loc
         if searchfor != "":
-            searchfor = self.normalize(searchfor).split()
-            bestmatch = self.getBestMatch(searchfor, loc)
+            bestmatch = self.getBestMatch(self.normalize(searchfor).split(), loc, overwrite=searchfor)
         elif len(self._lastlisted) > 0:
             bestmatch = self._lastlisted
         else:
@@ -165,12 +226,11 @@ class Memes:
                                          content="{} {}".format(fmt, self._message))
                 self._members = set()
                 self._message = ""
-                await self.bot.delete_message(ctx.message)
             except:
                 toDel = await self.bot.say("Chiru: ``FORBIDDEN``")
                 await asyncio.sleep(5)
-                await self.bot.delete_message(ctx.message)
                 await self.bot.delete_message(toDel)
+            await self.bot.delete_message(ctx.message)
         else:
             toDel = await self.bot.say("Chiru: ``No image matched the search term``")
             await asyncio.sleep(5)
@@ -195,11 +255,13 @@ class Memes:
             if len(bestmatch) > 0:
                 self._lastlisted = bestmatch
                 for m in bestmatch:
-                    fmt += "``{}. {}``\t\t".format(str(index + 1), m)
-                    index += 1
-                    if index % 20 == 0:
+                    next = "``{}. {}``\t\t".format(str(index + 1), m)
+                    if len(fmt + next)<2000:
+                        fmt += next
+                    else:
                         await self.bot.say(fmt)
-                        fmt = ""
+                        fmt = next
+                    index += 1
                 await self.bot.say(fmt)
             else:
                 await self.bot.say("Chiru: ``Didn't find any memes for {}``".format(ss))
@@ -209,12 +271,13 @@ class Memes:
             fmt = ""
             ss = searchfor
             for i in os.listdir(loc):
-                fmt += "``{}. {}``\t\t".format(str(index + 1), i)
-                index += 1
-                if index % 20 == 0:
+                next = "``{}. {}``\t\t".format(str(index + 1), i)
+                if len(fmt + next) < 2000:
+                    fmt += next
+                else:
                     await self.bot.say(fmt)
-                    fmt = ""
-                    await asyncio.sleep(0.1)
+                    fmt = next
+                index += 1
             await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
@@ -312,7 +375,7 @@ class Memes:
             ext = ".{}".format(ext)
             words.reverse()
             finalwords = words[:]  # bugfix: will now remove more than one word. It didn't before for some reason
-            self.bot.logger.info("Going into for loop with {} and {}".format(i, str(words)))
+            # self.bot.logger.info("Going into for loop with {} and {}".format(i, str(words)))
             for w1 in words:
                 oneskip = True
                 for w2 in finalwords:  # bugfix: will now remove only one duplicate
@@ -328,19 +391,23 @@ class Memes:
                 finalwords.remove(ext[1:])
             name = " ".join([self.normalize(w) for w in finalwords]) + self.normalize(ext)
             if i != name:
-                os.rename(loc + i, loc + name)
-                fmt += '"' + i + '" --> "' + name + '"\n'
+                try:
+                    os.rename(loc + i, loc + name)
+                    fmt += '"' + i + '" --> "' + name + '"\n'
+                except:
+                    continue
         if fmt != "":
             bb = ""
             index = 0
             await self.bot.say("Chiru: ``Here are the memes I renamed``\n")
             for i in fmt.split("\n")[:-1]:
-                bb += "``{}``\n".format(i)
-                index += 1
-                if index % 10 == 0:
+                next = "``{}``\n".format(i)
+                if len(bb + next)<2000:
+                    bb += next
+                else:
                     await self.bot.say(bb)
-                    bb = ""
-                    await asyncio.sleep(0.5)
+                    bb = next
+                index += 1
             if bb != "":
                 await self.bot.say(bb)
         else:
@@ -388,11 +455,13 @@ class Memes:
         if len(bestmatch) > 0:
             await self.bot.say("Chiru: ``Here are the new memes``")
             for m in bestmatch:
-                fmt += "``{}. {} {}``\t\t".format(str(index + 1), toAdd, m)
-                index += 1
-                if index % 20 == 0:
+                next = "``{}. {} {}``\t\t".format(str(index + 1), toAdd, m)
+                if len(fmt + next)<2000:
+                    fmt += next
+                else:
                     await self.bot.say(fmt)
-                    fmt = ""
+                    fmt = next
+                index += 1
             await self.bot.say(fmt)
         else:
             await self.bot.say(
@@ -423,16 +492,16 @@ class Memes:
             iterator = self.bot.logs_from(ctx.channel)
         else:
             iterator = self.bot.logs_from(self.bot.get_channel(channel))
-        reg = re.compile("(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?")
+        reg = re.compile("(https?:\\/\\/)?(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\/+[-a-zA-Z0-9@:%_\\+.~#?&//=]*")
         async for m in iterator:
             if isinstance(m, discord.Message):
                 if len(m.attachments) > 0:
                     if m.attachments[0]['url'].split(".")[-1].lower() in extensions:
                         urls.append(m.attachments[0]['url'])
-                elif reg.match(m.content):
-                    url = reg.match(m.content).group()
-                    if url.split(".")[-1].lower() in extensions:
-                        urls.append(url)
+                elif len([i for i in reg.finditer(m.content)]) > 0:
+                    for url in [i.group() for i in reg.finditer(m.content)]:
+                        if url.split(".")[-1].lower() in extensions:
+                            urls.append(url)
 
         if len(urls) == 0:
             await self.bot.say("Didn't find any images.")
@@ -488,24 +557,28 @@ class Memes:
         while True:
             name = await self.bot.wait_for_message(channel=ctx.channel, author=ctx.author)
             if name.content[:7].lower() == "saveas ":
-                if len(name.content.split()) > 1:
-                    with open(os.path.join(self._loc,
-                                           "{}.{}".format(self.normalize(name.content[7:]),
-                                                          self._lastextension)),
-                              "wb") as file:
-                        file.write(self._lastimage)
-                        self._lastimage = None
-                        await self.bot.delete_message(name)
-                        self._savedel += [await self.bot.say("Saved as ``{}``".format(file.name.split("/")[-1]))]
-                        delNow = self._savedel[:]
-                        self._savedel = []
-                        await asyncio.sleep(5)
-                        for m in delNow:
-                            try:
-                                await self.bot.delete_message(m)
-                            except:
-                                continue
-                    return
+                try:
+                    if len(name.content[7:].split()) > 1:
+                        with open(os.path.join(self._loc,
+                                               "{}.{}".format(self.normalize(name.content[7:]),
+                                                              self._lastextension)),
+                                  "wb") as file:
+                            file.write(self._lastimage)
+                            self._lastimage = None
+                            await self.bot.delete_message(name)
+                            self._savedel += [await self.bot.say("Saved as ``{}``".format(file.name.split("/")[-1]))]
+                            delNow = self._savedel[:]
+                            self._savedel = []
+                            await asyncio.sleep(5)
+                            for m in delNow:
+                                try:
+                                    await self.bot.delete_message(m)
+                                except:
+                                    continue
+                        return
+                except:
+                    await self.bot.say("Something weird happened...")
+                    pass
         return
 
     @snagmeme.command(pass_context=True)
