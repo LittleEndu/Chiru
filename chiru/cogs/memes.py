@@ -116,20 +116,20 @@ class Memes:
                 ctx.author.mention
 
             else:
-                toDel = await self.bot.say("Chiru: ``Can't find such member``")
+                toDel = await self.bot.say("``Can't find such member``")
                 await asyncio.sleep(5)
                 await self.bot.delete_message(ctx.message)
                 await self.bot.delete_message(toDel)
 
         else:
             if self._members == set():
-                await self.bot.say("Chiru: ``There's nobody set to be mentioned``")
+                await self.bot.say("``There's nobody set to be mentioned``")
             else:
                 fmt = ", ".join([i.name for i in self._members])
                 if len(self._members) == 1:
-                    await self.bot.say("Chiru: ``{} is set to be mentioned``".format(fmt))
+                    await self.bot.say("``{} is set to be mentioned``".format(fmt))
                 else:
-                    await self.bot.say("Chiru: ``{} are set to be mentioned``".format(fmt))
+                    await self.bot.say("``{} are set to be mentioned``".format(fmt))
 
     @commands.command(pass_context=True)
     async def clearmention(self, ctx: Context):
@@ -137,7 +137,7 @@ class Memes:
         Clears the mention
         """
         self._members = set()
-        await self.bot.say("Chiru: ``Metions cleared`` :thumbsup:")
+        await self.bot.say("``Metions cleared`` :thumbsup:")
 
     @commands.command(pass_context=True)
     async def mememessage(self, ctx: Context, *, message: str):
@@ -155,7 +155,7 @@ class Memes:
         Clears the message
         """
         self._message = ""
-        await self.bot.say("Chiru: ``Message cleared``:thumbsup:")
+        await self.bot.say("``Message cleared``:thumbsup:")
 
     def getBestMatch(self, searchfor, loc, extra=1, overwrite=""):
         if overwrite in self._overwrite:
@@ -212,7 +212,7 @@ class Memes:
         elif len(self._lastlisted) > 0:
             bestmatch = self._lastlisted
         else:
-            toDel = await self.bot.say("Chiru: ``You need to use listmemes first if you don't search for anything``")
+            toDel = await self.bot.say("``You need to use listmemes first if you don't search for anything``")
             await asyncio.sleep(5)
             await self.bot.delete_message(ctx.message)
             await self.bot.delete_message(toDel)
@@ -227,12 +227,13 @@ class Memes:
                 self._members = set()
                 self._message = ""
             except:
-                toDel = await self.bot.say("Chiru: ``FORBIDDEN``")
+                toDel = await self.bot.say("``FORBIDDEN``")
                 await asyncio.sleep(5)
                 await self.bot.delete_message(toDel)
+            await asyncio.sleep(10)
             await self.bot.delete_message(ctx.message)
         else:
-            toDel = await self.bot.say("Chiru: ``No image matched the search term``")
+            toDel = await self.bot.say("``No image matched the search term``")
             await asyncio.sleep(5)
             await self.bot.delete_message(ctx.message)
             await self.bot.delete_message(toDel)
@@ -264,7 +265,7 @@ class Memes:
                     index += 1
                 await self.bot.say(fmt)
             else:
-                await self.bot.say("Chiru: ``Didn't find any memes for {}``".format(ss))
+                await self.bot.say("``Didn't find any memes for {}``".format(ss))
         else:
             ##They didn't search anything so we are good to list them all
             index = 0
@@ -342,7 +343,7 @@ class Memes:
                 fmt += "`"
             await self.bot.say(fmt[:1500])
         else:
-            await self.bot.say("Chiru: ``All memes have unique enough filenames.``")
+            await self.bot.say("``All memes have unique enough filenames.``")
         toobig = []
         for m in os.listdir(loc):
             if os.stat(loc + m).st_size > 8000000:
@@ -399,7 +400,7 @@ class Memes:
         if fmt != "":
             bb = ""
             index = 0
-            await self.bot.say("Chiru: ``Here are the memes I renamed``\n")
+            await self.bot.say("``Here are the memes I renamed``\n")
             for i in fmt.split("\n")[:-1]:
                 next = "``{}``\n".format(i)
                 if len(bb + next)<2000:
@@ -411,7 +412,7 @@ class Memes:
             if bb != "":
                 await self.bot.say(bb)
         else:
-            await self.bot.say("Chiru: ``All memes are already clean``")
+            await self.bot.say("``All memes are already clean``")
 
     @commands.command(pass_context=True)
     async def bigmemes(self, ctx: Context, count: int = 10):
@@ -437,10 +438,10 @@ class Memes:
         Adds first word in input to every meme that matches the other words
         """
         if len(string_in.split()) < 2:
-            await self.bot.say("Chiru: ``You need to atleast one word to search for``")
+            await self.bot.say("``You need to atleast one word to search for``")
             return
         if string_in.split()[1] != "to":
-            await self.bot.say('Chiru: ``Second word needs to be "to" as in "addmemeterm this to something else"``')
+            await self.bot.say('``Second word needs to be "to" as in "addmemeterm this to something else"``')
             return
         toAdd = self.normalize(string_in).split()[0]
         toSearch = self.normalize(string_in).split()[2:]
@@ -453,7 +454,7 @@ class Memes:
         fmt = ""
         index = 0
         if len(bestmatch) > 0:
-            await self.bot.say("Chiru: ``Here are the new memes``")
+            await self.bot.say("``Here are the new memes``")
             for m in bestmatch:
                 next = "``{}. {} {}``\t\t".format(str(index + 1), toAdd, m)
                 if len(fmt + next)<2000:
@@ -465,7 +466,7 @@ class Memes:
             await self.bot.say(fmt)
         else:
             await self.bot.say(
-                "Chiru: ``Didn't find any memes for {}``".format("".join(self.normalize(string_in).split()[2:])))
+                "``Didn't find any memes for {}``".format("".join(self.normalize(string_in).split()[2:])))
 
     @addmemeterm.command(pass_context=True)
     async def undo(self, ctx: Context):
@@ -473,12 +474,12 @@ class Memes:
         Undoes the damage
         """
         if len(self._undobutton) == 0:
-            await self.bot.say("Chiru: ``There's nothing to undo``")
+            await self.bot.say("``There's nothing to undo``")
             return
         for i in self._undobutton:
             os.rename(self._undobutton[i], i)
         self._undobutton = {}
-        await self.bot.say("Chiru: :ok_hand:")
+        await self.bot.say(":ok_hand:")
 
     @commands.group(pass_context=True, invoke_without_command=True)
     async def snagmeme(self, ctx: Context, channel=None):

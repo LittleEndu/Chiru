@@ -94,7 +94,7 @@ class MyFun(object):
         Finds the avatar url of some member
         """
         await self.bot.say(
-            "Chiru: ``Here you go. Avatar url for {member.name}#{member.discriminator}: <{member.avatar_url}>``".format(
+            "``Here you go. Avatar url for {member.name}#{member.discriminator}: <{member.avatar_url}>``".format(
                 member=member))
 
     @commands.command(pass_context=True)
