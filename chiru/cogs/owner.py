@@ -14,6 +14,11 @@ from chiru import util
 from chiru.checks import is_owner
 
 
+class somebody:
+    def retarded(self):
+        return True
+
+
 class Owner:
     def __init__(self, bot: Chiru):
         self.bot = bot
@@ -130,6 +135,9 @@ class Owner:
         """
         Run a debug command.
         """
+        me = somebody()
+        shigetora = 1
+        god = 1
         try:
             result = eval(command)
             if inspect.isawaitable(result):
@@ -138,7 +146,7 @@ class Owner:
             result = repr(e)
 
         if self.bot.is_self_bot:
-            fmt = "```xl\nInput: {}\nOutput: {}\nIs instance of string: {}```".format(command, result, isinstance(result, str))
+            fmt = "```xl\nInput: {}\nOutput: {}\nOutput class: {}```".format(command, result, result.__class__.__name__)
             await asyncio.sleep(0.05)
             await self.bot.edit_message(ctx.message, fmt)
 

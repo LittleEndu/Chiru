@@ -12,8 +12,6 @@ from override import Context
 class Mal:
     """
     For connection with MyAnimeList
-
-    Uses Spice_api
     """
 
     def __init__(self, bot: Chiru):

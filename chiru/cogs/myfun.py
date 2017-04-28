@@ -89,13 +89,23 @@ class MyFun(object):
         await self.bot.say("( ͡° ͜ʖ ͡°) " + message)
 
     @commands.command(pass_context=True)
-    async def snagavatar(self, ctx: Context, member: discord.Member):
+    async def snagavatar(self, ctx: Context, memberid):
         """
         Finds the avatar url of some member
         """
-        await self.bot.say(
-            "``Here you go. Avatar url for {member.name}#{member.discriminator}: <{member.avatar_url}>``".format(
-                member=member))
+        memberid = re.sub(r"\D","",memberid)
+        if isinstance(memberid, str):
+            bettermember = None
+            for i in self.bot.get_all_members():
+                if i.id == memberid:
+                    bettermember = i
+                    break
+        if bettermember is not None:
+            fmt = "``Here you go. Avatar url for {member.name}#{member.discriminator}: <{member.avatar_url}>``".format(
+                member=bettermember)
+        else:
+            fmt = "``Unable to find member``"
+        await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
     async def justdeleteme(self, ctx: Context, count: int):

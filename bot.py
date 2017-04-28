@@ -365,7 +365,7 @@ class Chiru(Bot):
 
         view = StringView(message.content)
         if self._skip_check(message.author, self.user):
-            if not(message.server.id == "209734653853040640" and message.channel.id == "259423387225423872"):
+            if not(message.channel.id == "259423387225423872"):
                 return
 
         prefix = await self._get_prefix(message)

@@ -67,10 +67,14 @@ class Fun(object):
         for x in range(0, max_servers):
             if x >= len(servers):
                 break
+            if len(fmt+"**{0}.** `{1.name}` -> `{1.member_count}` members\n".format(x + 1, servers[x]))<1500:
+                fmt += "**{0}.** `{1.name}` -> `{1.member_count}` members\n".format(x + 1, servers[x])
+            else:
+                await self.bot.say(fmt)
+                fmt = "**{0}.** `{1.name}` -> `{1.member_count}` members\n".format(x + 1, servers[x])
 
-            fmt += "**{0}.** `{1.name}` -> `{1.member_count}` members\n".format(x + 1, servers[x])
-
-        await self.bot.say(fmt)
+        if len(fmt)>5:
+            await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
     async def whois(self, ctx: Context, *, member: discord.Member):

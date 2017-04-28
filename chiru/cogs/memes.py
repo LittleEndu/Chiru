@@ -2,19 +2,20 @@
 Meme responses
 """
 
-import os
-import re
 import asyncio
 import json
-import discord
-import aiohttp
 import operator
-import json
+import os
+import re
 from random import randint
+
+import aiohttp
+import discord
 from discord.ext import commands
 
 from bot import Chiru
 from override import Context
+from chiru.checks import is_owner
 
 
 class Memes:
@@ -35,12 +36,13 @@ class Memes:
         self._loc = self.bot.config.get("memelocation", "")
         self._overwrite = {}
         try:
-            with open(self._loc+"ignore/overwrite.json",encoding="UTF-8") as filein:
+            with open(self._loc + "ignore/overwrite.json", encoding="UTF-8") as filein:
                 self._overwrite = json.load(filein)
         except:
             pass
 
     @commands.command(pass_context=True, invoke_without_command=True)
+    @commands.check(is_owner)
     async def addoverwritememe(self, ctx: Context, *, searchfor: str):
         """
         Adds a search overwrite for a listed meme
@@ -52,7 +54,7 @@ class Memes:
         toDel += [await self.bot.say("With what do you want ``{}`` to be overwritten in search?".format(meme))]
         overwrite = await self.bot.wait_for_message(channel=ctx.channel, author=ctx.author)
         toDel += [overwrite]
-        if overwrite.content[0].lower() in ['c', 'r'] and len(overwrite.content)==1:
+        if overwrite.content[0].lower() in ['c', 'r'] and len(overwrite.content) == 1:
             await self.bot.say("Oki, canceling.")
             await asyncio.sleep(5)
             for m in toDel:
@@ -73,6 +75,7 @@ class Memes:
                 continue
 
     @commands.command(pass_context=True, invoke_without_command=True)
+    @commands.check(is_owner)
     async def mememention(self, ctx: Context, *, member: str = ""):
         """
         Set a mention for next meme
@@ -95,11 +98,11 @@ class Memes:
                         mytimer -= 1
                 if tempmember in self._members:
                     self._members.remove(tempmember)
-            elif len(ctx.message.mentions)>0:
+            elif len(ctx.message.mentions) > 0:
                 members = ctx.message.mentions
                 await self.bot.delete_message(ctx.message)
                 for m in members:
-                    if isinstance(m,discord.Member):
+                    if isinstance(m, discord.Member):
                         self._members.add(m)
                 mytimer = 60
                 self._mentiontimer += 60
@@ -132,6 +135,7 @@ class Memes:
                     await self.bot.say("``{} are set to be mentioned``".format(fmt))
 
     @commands.command(pass_context=True)
+    @commands.check(is_owner)
     async def clearmention(self, ctx: Context):
         """
         Clears the mention
@@ -140,6 +144,7 @@ class Memes:
         await self.bot.say("``Metions cleared`` :thumbsup:")
 
     @commands.command(pass_context=True)
+    @commands.check(is_owner)
     async def mememessage(self, ctx: Context, *, message: str):
         """
         Set a message for next meme
@@ -150,6 +155,7 @@ class Memes:
         self._message = ""
 
     @commands.command(pass_context=True)
+    @commands.check(is_owner)
     async def clearmessage(self, ctx: Context):
         """
         Clears the message
@@ -187,12 +193,13 @@ class Memes:
         return string.replace("'", "").replace("fuck", "fck").lower()
 
     def get_random_problem(self):
-        mylist = ['*','/','+','-']
+        mylist = ['*', '/', '+', '-']
         problem = ""
         answer = 0
         while True:
             try:
-                problem = "{}{}{}{}{}".format(randint(1,9),mylist[randint(2,3)],randint(1,9),mylist[randint(0,3)],randint(1,9))
+                problem = "{}{}{}{}{}".format(randint(1, 9), mylist[randint(2, 3)], randint(1, 9),
+                                              mylist[randint(0, 3)], randint(1, 9))
                 answer = int(eval(problem))
                 break
             except ZeroDivisionError:
@@ -227,9 +234,14 @@ class Memes:
                 self._members = set()
                 self._message = ""
             except:
-                toDel = await self.bot.say("``FORBIDDEN``")
-                await asyncio.sleep(5)
-                await self.bot.delete_message(toDel)
+                message = await self.bot.send_file(self.bot.get_channel("209734653853040640"),
+                                                   loc + bestmatch[randint(0, len(bestmatch) - 1)])
+                url = message.attachments[0]['url']
+                await self.bot.say("{}\n{} {}".format(url, fmt, self._message))
+                self._members = set()
+                self._message = ""
+
+
             await asyncio.sleep(10)
             await self.bot.delete_message(ctx.message)
         else:
@@ -257,7 +269,7 @@ class Memes:
                 self._lastlisted = bestmatch
                 for m in bestmatch:
                     next = "``{}. {}``\t\t".format(str(index + 1), m)
-                    if len(fmt + next)<2000:
+                    if len(fmt + next) < 2000:
                         fmt += next
                     else:
                         await self.bot.say(fmt)
@@ -299,6 +311,7 @@ class Memes:
         await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
+    @commands.check(is_owner)
     async def checkmemes(self, ctx: Context):
         """
         Checks if every meme can be used.
@@ -326,7 +339,7 @@ class Memes:
                 if m == j:
                     continue
                 str_ext = m.split(".")
-                str_temp = m[:-len(str_ext[-1])-1]
+                str_temp = m[:-len(str_ext[-1]) - 1]
                 str_m = str_temp.split() + [str_ext[-1]]
                 if all(re.match(".*({}).*".format(re.escape(n.lower())), j.lower()) for n in str_m):
                     cantfind += [m]
@@ -360,6 +373,7 @@ class Memes:
             await self.bot.say(fmt)
 
     @commands.command(pass_context=True)
+    @commands.check(is_owner)
     async def cleanmemes(self, ctx: Context):
         """
         Removes repeat words from file names
@@ -371,7 +385,7 @@ class Memes:
                 continue
             words = self.normalize(i)
             ext = words.split(".")[-1]
-            words = words[:-len(ext)-1].split()
+            words = words[:-len(ext) - 1].split()
             words.append(ext)
             ext = ".{}".format(ext)
             words.reverse()
@@ -403,7 +417,7 @@ class Memes:
             await self.bot.say("``Here are the memes I renamed``\n")
             for i in fmt.split("\n")[:-1]:
                 next = "``{}``\n".format(i)
-                if len(bb + next)<2000:
+                if len(bb + next) < 2000:
                     bb += next
                 else:
                     await self.bot.say(bb)
@@ -415,6 +429,7 @@ class Memes:
             await self.bot.say("``All memes are already clean``")
 
     @commands.command(pass_context=True)
+    @commands.check(is_owner)
     async def bigmemes(self, ctx: Context, count: int = 10):
         """
         Return count biggest memes
@@ -431,6 +446,7 @@ class Memes:
         await self.bot.say(fmt)
 
     @commands.group(pass_context=True, invoke_without_command=True)
+    @commands.check(is_owner)
     async def addmemeterm(self, ctx: Context, *, string_in: str):
         """
         Will add words to filenames
@@ -457,7 +473,7 @@ class Memes:
             await self.bot.say("``Here are the new memes``")
             for m in bestmatch:
                 next = "``{}. {} {}``\t\t".format(str(index + 1), toAdd, m)
-                if len(fmt + next)<2000:
+                if len(fmt + next) < 2000:
                     fmt += next
                 else:
                     await self.bot.say(fmt)
@@ -469,6 +485,7 @@ class Memes:
                 "``Didn't find any memes for {}``".format("".join(self.normalize(string_in).split()[2:])))
 
     @addmemeterm.command(pass_context=True)
+    @commands.check(is_owner)
     async def undo(self, ctx: Context):
         """
         Undoes the damage
@@ -482,6 +499,7 @@ class Memes:
         await self.bot.say(":ok_hand:")
 
     @commands.group(pass_context=True, invoke_without_command=True)
+    @commands.check(is_owner)
     async def snagmeme(self, ctx: Context, channel=None):
         """
         Searches the logs and saves the first image it finds
@@ -493,7 +511,8 @@ class Memes:
             iterator = self.bot.logs_from(ctx.channel)
         else:
             iterator = self.bot.logs_from(self.bot.get_channel(channel))
-        reg = re.compile("(https?:\\/\\/)?(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\/+[-a-zA-Z0-9@:%_\\+.~#?&//=]*")
+        reg = re.compile(
+            "(https?:\\/\\/)?(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\/+[-a-zA-Z0-9@:%_\\+.~#?&//=]*")
         async for m in iterator:
             if isinstance(m, discord.Message):
                 if len(m.attachments) > 0:
@@ -568,6 +587,7 @@ class Memes:
                             self._lastimage = None
                             await self.bot.delete_message(name)
                             self._savedel += [await self.bot.say("Saved as ``{}``".format(file.name.split("/")[-1]))]
+                            self._savedel += name
                             delNow = self._savedel[:]
                             self._savedel = []
                             await asyncio.sleep(5)
@@ -583,6 +603,7 @@ class Memes:
         return
 
     @snagmeme.command(pass_context=True)
+    @commands.check(is_owner)
     async def reset(self, ctx: Context):
         """
         Resets the last saved image
