@@ -27,7 +27,7 @@ class Pxls(object):
         self.templates = list()
         self.color_tuples = None
         self.running = False
-        self.alertchannels = list()
+        self.alertchannels = set()
         self.helpfuls = list()
         self.harmfuls = list()
 
@@ -95,12 +95,14 @@ class Pxls(object):
             await self.bot.say("We aren't spectating the canvas.")
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def pxlsdebug(self, ctx: Context):
         for tt in self.templates:
             assert isinstance(tt, dict)
             await self.bot.say("{}: {}".format(tt["name"], tt["score"]))
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def startpxls(self, ctx: Context):
         """
         Starts spectating pixels
@@ -138,6 +140,7 @@ class Pxls(object):
                     tt["score"] *= 0.99
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def stoppxls(self, ctx: Context):
         """
         Stops spectating pixels
@@ -146,6 +149,7 @@ class Pxls(object):
         await self.bot.say("Stopped spectating pxls")
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def addtemplate(self, ctx: Context, ox: int, oy: int, *, name: str):
         """
         Adds template
@@ -166,6 +170,7 @@ class Pxls(object):
         await self.bot.say("Successfully added template")
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def removetemplate(self, ctx: Context, name: str):
         """
         Removes template
@@ -177,14 +182,16 @@ class Pxls(object):
                 await self.bot.say("Successfully removed template")
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def startalerts(self, ctx: Context):
         """
         Starts atting everyone in this channel
         """
-        self.alertchannels.append(ctx.channel.id)
+        self.alertchannels.add(ctx.channel.id)
         await self.bot.say("Will alert this channel")
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def stopalerts(self, ctx: Context):
         """
         Stop atting everyone in this channel
@@ -196,6 +203,7 @@ class Pxls(object):
             await self.bot.say("That channel isn't in the list")
 
     @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
     async def testalert(self, ctx: Context):
         """
         Does test alert
