@@ -14,8 +14,8 @@ import discord
 from discord.ext import commands
 
 from bot import Chiru
-from override import Context
 from chiru.checks import is_owner
+from override import Context
 
 
 class Memes:
@@ -240,7 +240,6 @@ class Memes:
                 await self.bot.say("{}\n{} {}".format(url, fmt, self._message))
                 self._members = set()
                 self._message = ""
-
 
             await asyncio.sleep(10)
             await self.bot.delete_message(ctx.message)

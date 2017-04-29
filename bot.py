@@ -1,25 +1,21 @@
 """
 Bot file.
 """
+import asyncio
+import logging
 import os
+import random
+import re
 import shutil
 import sys
-import re
+import time
+import traceback
+from datetime import datetime
 
 import aioredis as aioredis
-import asyncio
 import discord
 import logbook
-import logging
-
-import time
-
-import random
 import yaml
-
-import traceback
-
-from datetime import datetime
 from discord.ext import commands
 from discord.ext.commands import Bot, CommandNotFound
 from discord.ext.commands.view import StringView
@@ -27,8 +23,6 @@ from kyoukai import Kyoukai
 from kyoukai.asphalt import KyoukaiComponent
 from kyoukai.blueprints import Blueprint
 from kyoukai.context import HTTPRequestContext
-import itsdangerous
-
 from logbook.compat import redirect_logging
 
 from override import Context
@@ -36,7 +30,7 @@ from override import Context
 # Define logging stuff.
 redirect_logging()
 
-#StreamHandler(sys.stderr).push_application()
+# StreamHandler(sys.stderr).push_application()
 
 r = re.compile(r"_requirements:: (.*)?")
 
@@ -64,7 +58,6 @@ class Chiru(Bot):
         self.logger = logbook.Logger("Chiru")
         self.logger.level = logbook.INFO
 
-
         # We still have to do this
         logging.root.setLevel(logging.INFO)
 
@@ -84,7 +77,9 @@ class Chiru(Bot):
         with open(cfg) as f:
             self.config = yaml.load(f)
 
-        self.logger.handlers.append(logbook.FileHandler(self.config.get("loglocation")+str(datetime.now().date())+".log",level="DEBUG", bubble=True))
+        self.logger.handlers.append(
+            logbook.FileHandler(self.config.get("loglocation") + str(datetime.now().date()) + ".log", level="DEBUG",
+                                bubble=True))
         self.logger.handlers.append(logbook.StreamHandler(sys.stderr, level='INFO', bubble=True))
         self.logger.info("Chiru Initializing\n\n\t\tChiru Initializing\n\n\t\tChiru Initializing\n\n")
 
@@ -314,13 +309,13 @@ class Chiru(Bot):
         if not isinstance(message.channel, discord.PrivateChannel):
             self.logger.info("Recieved message: {message.content}".format(message=message))
             self.logger.info("Message ID: {message.id}".format(message=message))
-            if len(message.attachments)>0:
+            if len(message.attachments) > 0:
                 inf = "  File urls: "
                 inf += "\n".join(i['url'] for i in message.attachments)
                 self.logger.info(inf)
             self.logger.info("  From{bot}: {message.author.display_name}"
                              .format(message=message, bot=" [BOT]" if message.author.bot else ""))
-            if message.author.display_name!=message.author.name:
+            if message.author.display_name != message.author.name:
                 self.logger.info("  Username: {message.author.name}".format(message=message))
             self.logger.info("  User ID: {message.author.id}".format(message=message))
             self.logger.info("  On channel: #{message.channel.name}".format(message=message))
@@ -342,7 +337,6 @@ class Chiru(Bot):
                                                          "this.")
                 return
             else:
-
                 if isinstance(e, commands.errors.CommandInvokeError):
                     lines = traceback.format_exception(type(e), e.__cause__, e.__cause__.__traceback__)
                 else:
@@ -365,7 +359,7 @@ class Chiru(Bot):
 
         view = StringView(message.content)
         if self._skip_check(message.author, self.user):
-            if not(message.channel.id == "259423387225423872"):
+            if not (message.channel.id == "259423387225423872"):
                 return
 
         prefix = await self._get_prefix(message)
